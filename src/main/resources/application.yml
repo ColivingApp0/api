@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: coliving-api
+  profiles:
+    active:
+      - dev
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  liquibase:
+    enabled: true
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+server:
+  port: 8080
+
+identity:
+  security:
+    # Session lifetime (RF-002); one token per device, revocable by logout.
+    session-ttl: 30d
+    # Single-use e-mail verification link (RF-001).
+    email-verification-token-ttl: 24h
+    # Single-use password reset link (RF-003).
+    password-reset-token-ttl: 30m
+  storage:
+    # Verification documents live outside the public web root (RF-012).
+    directory: ./storage/identity-documents
+  bootstrap:
+    # Dev-only first ADMINISTRADOR account; overridden in application-dev.yml.
+    enabled: false

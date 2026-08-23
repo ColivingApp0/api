@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/coliving}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    show-sql: true
+logging:
+  level:
+    org.hibernate.sql: DEBUG
+    liquibase: INFO
+    com.coliving.api.identity.infrastructure.mail: INFO
+server:
+  port: 8080
+
+# Dev-only bootstrap admin. Override secrets via environment.
+identity:
+  bootstrap:
+    enabled: true
+    admin-email: admin@coliving.local
+    admin-password: ${IDENTITY_ADMIN_PASSWORD:Admin123!}
