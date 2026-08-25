@@ -1,0 +1,467 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1.0.0-identity-schema
+      author: coliving
+      changes:
+        - createTable:
+            tableName: identity_user
+            remarks: Identity aggregate root (Usuario). Email + password based account.
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_identity_user
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: password_hash
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email_verified
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            constraintName: uk_identity_user_email
+            tableName: identity_user
+            columnNames: email
+
+        - createTable:
+            tableName: identity_role
+            remarks: Role catalog (Rol).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_identity_role
+              - column:
+                  name: code
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            constraintName: uk_identity_role_code
+            tableName: identity_role
+            columnNames: code
+
+        - createTable:
+            tableName: identity_user_role
+            remarks: User role bridge with attributes (UsuarioRol).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_identity_user_role
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_code
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: assigned_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: identity_user_role
+            baseColumnNames: user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_identity_user_role_user
+        - addForeignKeyConstraint:
+            baseTableName: identity_user_role
+            baseColumnNames: role_id
+            referencedTableName: identity_role
+            referencedColumnNames: id
+            constraintName: fk_identity_user_role_role
+        - addUniqueConstraint:
+            constraintName: uk_identity_user_role
+            tableName: identity_user_role
+            columnNames: user_id, role_id
+        - createIndex:
+            indexName: idx_identity_user_role_active
+            tableName: identity_user_role
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: is_active
+
+        - createTable:
+            tableName: identity_profile
+            remarks: User profile (Perfil), independent aggregate linked by user_id.
+            columns:
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_identity_profile
+              - column:
+                  name: full_name
+                  type: VARCHAR(255)
+              - column:
+                  name: phone
+                  type: VARCHAR(50)
+              - column:
+                  name: guest_type
+                  type: VARCHAR(50)
+              - column:
+                  name: home_city_id
+                  type: UUID
+                  remarks: Reference to city catalog of the academic context (no FK).
+              - column:
+                  name: stay_preferences
+                  type: VARCHAR(500)
+                  remarks: Comma-separated stay preference codes.
+              - column:
+                  name: affinity_visible
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: verification_level
+                  type: VARCHAR(50)
+                  defaultValue: "NO_VERIFICADO"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: identity_profile
+            baseColumnNames: user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_identity_profile_user
+
+        - createTable:
+            tableName: identity_consent
+            remarks: Consent records with version/purpose (Consentimiento).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_identity_consent
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: purpose
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: accepted
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: accepted_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: identity_consent
+            baseColumnNames: user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_identity_consent_user
+        - addUniqueConstraint:
+            constraintName: uk_identity_consent_user_type
+            tableName: identity_consent
+            columnNames: user_id, type
+
+        - createTable:
+            tableName: identity_verification_document
+            remarks: Verification documents (DocumentoVerificacion).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_identity_verification_document
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: document_type
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: storage_key
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  defaultValue: "PENDIENTE"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: review_reason
+                  type: VARCHAR(1000)
+              - column:
+                  name: reviewer_user_id
+                  type: UUID
+                  remarks: Reference to a reviewer user (no FK; other aggregate).
+              - column:
+                  name: uploaded_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reviewed_at
+                  type: TIMESTAMP WITH TIME ZONE
+        - addForeignKeyConstraint:
+            baseTableName: identity_verification_document
+            baseColumnNames: user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_identity_verification_document_user
+        - createIndex:
+            indexName: idx_identity_verification_document_status
+            tableName: identity_verification_document
+            columns:
+              - column:
+                  name: status
+
+        - createTable:
+            tableName: identity_session
+            remarks: Opaque session tokens, hash-only (RF-002).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_identity_session
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_hash
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: device_label
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: revoked_at
+                  type: TIMESTAMP WITH TIME ZONE
+        - addForeignKeyConstraint:
+            baseTableName: identity_session
+            baseColumnNames: user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_identity_session_user
+        - addUniqueConstraint:
+            constraintName: uk_identity_session_hash
+            tableName: identity_session
+            columnNames: token_hash
+
+        - createTable:
+            tableName: identity_security_token
+            remarks: One-time security tokens (email verification, password reset), hash-only.
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_identity_security_token
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: purpose
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_hash
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: used_at
+                  type: TIMESTAMP WITH TIME ZONE
+        - addForeignKeyConstraint:
+            baseTableName: identity_security_token
+            baseColumnNames: user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_identity_security_token_user
+        - addUniqueConstraint:
+            constraintName: uk_identity_security_token_hash_purpose
+            tableName: identity_security_token
+            columnNames: token_hash, purpose
+
+  - changeSet:
+      id: 1.0.0-identity-partial-unique-active-role
+      author: coliving
+      comments: Enforces the RF-004 invariant of a single ACTIVE role per user.
+      changes:
+        - sql:
+            sql: CREATE UNIQUE INDEX IF NOT EXISTS uq_identity_user_role_active
+                  ON identity_user_role(user_id) WHERE is_active = true;
+
+  - changeSet:
+      id: 1.0.0-identity-seed-roles
+      author: coliving
+      comments: Seeds the role catalog with stable identifiers (SRS 1.3; VISITANTE is not persisted).
+      changes:
+        - insert:
+            tableName: identity_role
+            columns:
+              - column: { name: id, value: "10000000-0000-0000-0000-000000000001" }
+              - column: { name: code, value: "HUESPED_ESTUDIANTE" }
+              - column: { name: name, value: "Huésped estudiante" }
+              - column: { name: active, valueBoolean: true }
+        - insert:
+            tableName: identity_role
+            columns:
+              - column: { name: id, value: "10000000-0000-0000-0000-000000000002" }
+              - column: { name: code, value: "HUESPED_TURISTA" }
+              - column: { name: name, value: "Huésped turista" }
+              - column: { name: active, valueBoolean: true }
+        - insert:
+            tableName: identity_role
+            columns:
+              - column: { name: id, value: "10000000-0000-0000-0000-000000000003" }
+              - column: { name: code, value: "ANFITRION" }
+              - column: { name: name, value: "Anfitrión" }
+              - column: { name: active, valueBoolean: true }
+        - insert:
+            tableName: identity_role
+            columns:
+              - column: { name: id, value: "10000000-0000-0000-0000-000000000004" }
+              - column: { name: code, value: "RESIDENTE" }
+              - column: { name: name, value: "Residente" }
+              - column: { name: active, valueBoolean: true }
+        - insert:
+            tableName: identity_role
+            columns:
+              - column: { name: id, value: "10000000-0000-0000-0000-000000000005" }
+              - column: { name: code, value: "MODERADOR" }
+              - column: { name: name, value: "Moderador / soporte" }
+              - column: { name: active, valueBoolean: true }
+        - insert:
+            tableName: identity_role
+            columns:
+              - column: { name: id, value: "10000000-0000-0000-0000-000000000006" }
+              - column: { name: code, value: "ADMINISTRADOR" }
+              - column: { name: name, value: "Administrador" }
+              - column: { name: active, valueBoolean: true }
