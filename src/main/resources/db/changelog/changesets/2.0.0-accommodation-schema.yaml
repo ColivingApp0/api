@@ -1,0 +1,346 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2.0.0-accommodation-schema
+      author: coliving
+      remarks: Creates the accommodation bounded-context schema (property, unit,
+        publication, pricing, rule, availability slot).
+      changes:
+        - createTable:
+            tableName: accommodation_property
+            remarks: Property aggregate (Propiedad), host-owned.
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_accommodation_property
+              - column:
+                  name: host_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: city_id
+                  type: UUID
+                  remarks: Reference to the city catalog (no FK).
+              - column:
+                  name: address
+                  type: VARCHAR(255)
+              - column:
+                  name: amenities
+                  type: TEXT
+                  remarks: Comma-separated amenity codes/names.
+              - column:
+                  name: archived
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: accommodation_property
+            baseColumnNames: host_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_accommodation_property_host
+        - createIndex:
+            indexName: idx_accommodation_property_host
+            tableName: accommodation_property
+            columns:
+              - column:
+                  name: host_id
+
+        - createTable:
+            tableName: accommodation_unit
+            remarks: Unit within a property; the reservation-granularity entity.
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_accommodation_unit
+              - column:
+                  name: property_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_guests
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: bedrooms
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: beds
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: bathrooms
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: accommodation_unit
+            baseColumnNames: property_id
+            referencedTableName: accommodation_property
+            referencedColumnNames: id
+            constraintName: fk_accommodation_unit_property
+        - createIndex:
+            indexName: idx_accommodation_unit_property
+            tableName: accommodation_unit
+            columns:
+              - column:
+                  name: property_id
+
+        - createTable:
+            tableName: accommodation_publication
+            remarks: Listing (Publication) exposing a unit; 1:1 with unit.
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_accommodation_publication
+              - column:
+                  name: unit_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  defaultValue: "BORRADOR"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: accommodation_publication
+            baseColumnNames: unit_id
+            referencedTableName: accommodation_unit
+            referencedColumnNames: id
+            constraintName: fk_accommodation_publication_unit
+        - addUniqueConstraint:
+            constraintName: uk_accommodation_publication_unit
+            tableName: accommodation_publication
+            columnNames: unit_id
+        - createIndex:
+            indexName: idx_accommodation_publication_status
+            tableName: accommodation_publication
+            columns:
+              - column:
+                  name: status
+
+        - createTable:
+            tableName: accommodation_pricing
+            remarks: Per-night base pricing of a publication.
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_accommodation_pricing
+              - column:
+                  name: publication_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: base_price_per_night
+                  type: NUMERIC(12,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: VARCHAR(5)
+                  defaultValue: "COP"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: accommodation_pricing
+            baseColumnNames: publication_id
+            referencedTableName: accommodation_publication
+            referencedColumnNames: id
+            constraintName: fk_accommodation_pricing_publication
+        - addUniqueConstraint:
+            constraintName: uk_accommodation_pricing_publication
+            tableName: accommodation_pricing
+            columnNames: publication_id
+
+        - createTable:
+            tableName: accommodation_rule
+            remarks: Booking rules and cancellation policy of a publication.
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_accommodation_rule
+              - column:
+                  name: publication_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cancellation_policy
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: check_in_time
+                  type: TIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: check_out_time
+                  type: TIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: min_nights
+                  type: INT
+                  defaultValueNumeric: 1
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_nights
+                  type: INT
+                  defaultValueNumeric: 365
+                  constraints:
+                    nullable: false
+              - column:
+                  name: house_rules
+                  type: TEXT
+                  remarks: Comma-separated house rules.
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: accommodation_rule
+            baseColumnNames: publication_id
+            referencedTableName: accommodation_publication
+            referencedColumnNames: id
+            constraintName: fk_accommodation_rule_publication
+        - addUniqueConstraint:
+            constraintName: uk_accommodation_rule_publication
+            tableName: accommodation_rule
+            columnNames: publication_id
+
+        - createTable:
+            tableName: accommodation_availability_slot
+            remarks: Per-day availability of a unit. Absence of a row means the
+              day is DISPONIBLE; rows are created lazily (host block or
+              reservation lock). reservation_id is an external reference to the
+              future booking context (no FK).
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_accommodation_availability_slot
+              - column:
+                  name: unit_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: state
+                  type: VARCHAR(30)
+                  defaultValue: "DISPONIBLE"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reservation_id
+                  type: UUID
+                  remarks: External reference to booking reservation; NULL for host blocks.
+        - addForeignKeyConstraint:
+            baseTableName: accommodation_availability_slot
+            baseColumnNames: unit_id
+            referencedTableName: accommodation_unit
+            referencedColumnNames: id
+            constraintName: fk_accommodation_availability_slot_unit
+        - addUniqueConstraint:
+            constraintName: uk_accommodation_availability_slot_day
+            tableName: accommodation_availability_slot
+            columnNames: unit_id, date
+        - createIndex:
+            indexName: idx_accommodation_availability_slot_state
+            tableName: accommodation_availability_slot
+            columns:
+              - column:
+                  name: state
