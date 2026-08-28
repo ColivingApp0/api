@@ -1,0 +1,110 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1.0.1-profile-bounded-context
+      author: coliving
+      remarks: Moves the profile aggregate from identity_profile to profile_profile
+        (new `profile` bounded context). Data is copied, then the old table is dropped.
+      changes:
+        - createTable:
+            tableName: profile_profile
+            remarks: Profile aggregate (Perfil) owned by the profile bounded context.
+            columns:
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_profile_profile
+              - column:
+                  name: full_name
+                  type: VARCHAR(255)
+              - column:
+                  name: phone
+                  type: VARCHAR(50)
+              - column:
+                  name: guest_type
+                  type: VARCHAR(50)
+              - column:
+                  name: home_city_id
+                  type: UUID
+                  remarks: Reference to the city catalog (academic context), no FK.
+              - column:
+                  name: institution_id
+                  type: UUID
+                  remarks: Reference to the academic catalog (no FK).
+              - column:
+                  name: faculty_id
+                  type: UUID
+                  remarks: Reference to the academic catalog (no FK).
+              - column:
+                  name: career_id
+                  type: UUID
+                  remarks: Reference to the academic catalog (no FK).
+              - column:
+                  name: academic_unlisted
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: academic_visible
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: stay_preferences
+                  type: VARCHAR(500)
+                  remarks: Comma-separated stay preference codes.
+              - column:
+                  name: affinity_visible
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: profile_profile
+            baseColumnNames: user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_profile_profile_user
+
+  - changeSet:
+      id: 1.0.1-copy-profile-data
+      author: coliving
+      remarks: |
+        Carries existing profile rows from identity_profile to profile_profile.
+        Academic fields have no 1.0.0 source, so they start as NULL/false. The
+        stored verification_level is dropped: it becomes a derived projection in
+        the identity context (UserVerificationQueryService).
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO profile_profile
+                (user_id, full_name, phone, guest_type, home_city_id,
+                 institution_id, faculty_id, career_id,
+                 academic_unlisted, academic_visible,
+                 stay_preferences, affinity_visible, updated_at)
+              SELECT user_id, full_name, phone, guest_type, home_city_id,
+                     NULL::uuid, NULL::uuid, NULL::uuid,
+                     false, false,
+                     stay_preferences, affinity_visible, updated_at
+              FROM identity_profile;
+
+  - changeSet:
+      id: 1.0.1-drop-identity-profile
+      author: coliving
+      remarks: The profile table is now owned by the `profile` context; the old
+        identity_profile table (and its FK) is removed.
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: identity_profile
+            constraintName: fk_identity_profile_user
+        - dropTable:
+            tableName: identity_profile
