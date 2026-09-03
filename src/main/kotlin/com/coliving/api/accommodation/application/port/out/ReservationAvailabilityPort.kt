@@ -16,5 +16,12 @@ interface ReservationAvailabilityPort {
     /** Releases the held days for a reservation. */
     fun unlockRange(unitId: UUID, from: LocalDate, to: LocalDate, reservationId: UUID)
 
+    /**
+     * Transitions every held day (BLOQUEADO by reservationId) to OCUPADO when
+     * the reservation is confirmed. Part of the lifecycle defined in the SRS:
+     * a locked provisional hold becomes an occupied confirmed stay.
+     */
+    fun confirmRange(unitId: UUID, from: LocalDate, to: LocalDate, reservationId: UUID)
+
     fun isRangeAvailable(unitId: UUID, from: LocalDate, to: LocalDate): Boolean
 }
