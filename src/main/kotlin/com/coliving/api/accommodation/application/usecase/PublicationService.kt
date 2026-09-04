@@ -22,6 +22,7 @@ import com.coliving.api.accommodation.domain.repository.PublicationRepository
 import com.coliving.api.accommodation.domain.repository.RuleRepository
 import com.coliving.api.accommodation.domain.repository.UnitRepository
 import com.coliving.api.shared.error.ConflictException
+import java.time.Instant
 import com.coliving.api.shared.error.ForbiddenException
 import com.coliving.api.shared.error.NotFoundException
 import java.util.UUID
@@ -49,6 +50,7 @@ class PublicationService(
             id = UUID.randomUUID(),
             unitId = command.unitId,
             title = command.title,
+            now = Instant.now(),
         )
         publicationRepository.save(publication)
         return publication.toView()
@@ -145,6 +147,7 @@ class PublicationService(
     ): PublicationView {
         val publication = requireOwned(publicationId, hostId)
         action(publication)
+        publication.touch(Instant.now())
         publicationRepository.save(publication)
         return publication.toView()
     }
