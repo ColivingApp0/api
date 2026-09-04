@@ -1,0 +1,175 @@
+databaseChangeLog:
+  - changeSet:
+      id: 3.0.0-booking-schema
+      author: coliving
+      remarks: Creates the booking bounded-context schema (reservation + event
+        history). Cross-context references are plain UUIDs; FKs only into
+        identity_user per the architecture rule.
+      changes:
+        - createTable:
+            tableName: booking_reservation
+            remarks: Reservation aggregate (SRS Solicitudes, RF-040..044).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_booking_reservation
+              - column:
+                  name: unit_id
+                  type: UUID
+                  remarks: Reference to accommodation_unit (no FK).
+                  constraints:
+                    nullable: false
+              - column:
+                  name: publication_id
+                  type: UUID
+                  remarks: Reference to accommodation_publication (no FK).
+                  constraints:
+                    nullable: false
+              - column:
+                  name: guest_user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: from_date
+                  type: DATE
+                  remarks: First night of the stay (inclusive).
+                  constraints:
+                    nullable: false
+              - column:
+                  name: to_date
+                  type: DATE
+                  remarks: Checkout day (exclusive).
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occupants
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: message
+                  type: TEXT
+                  remarks: Initial message from the guest (RF-040).
+              - column:
+                  name: status
+                  type: VARCHAR(30)
+                  remarks: SOLICITADA, INFORMACION_SOLICITADA, ACEPTADA, CONFIRMADA, RECHAZADA, CANCELADA, EXPIRADA.
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price_per_night
+                  type: NUMERIC(12, 2)
+                  remarks: Snapshot of the publication price (RN-07).
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: VARCHAR(5)
+                  remarks: Snapshot currency (RN-07).
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cancellation_policy
+                  type: VARCHAR(30)
+                  remarks: Snapshot policy (RN-07). Nullable when the publication had no rules yet.
+              - column:
+                  name: hold_expires_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  remarks: Provisional hold deadline set on acceptance (RF-043).
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: booking_reservation
+            baseColumnNames: guest_user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_booking_reservation_guest
+            onDelete: RESTRICT
+        - createIndex:
+            indexName: idx_booking_reservation_guest
+            tableName: booking_reservation
+            columns:
+              - column:
+                  name: guest_user_id
+        - createIndex:
+            indexName: idx_booking_reservation_unit
+            tableName: booking_reservation
+            columns:
+              - column:
+                  name: unit_id
+        - createIndex:
+            indexName: idx_booking_reservation_status_hold
+            tableName: booking_reservation
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: hold_expires_at
+        - createTable:
+            tableName: booking_reservation_event
+            remarks: Immutable transition history (RF-042).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_booking_reservation_event
+              - column:
+                  name: reservation_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: actor_user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: TEXT
+                  remarks: Reason recorded on rejections and cancellations (RF-044).
+              - column:
+                  name: occurred_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: booking_reservation_event
+            baseColumnNames: reservation_id
+            referencedTableName: booking_reservation
+            referencedColumnNames: id
+            constraintName: fk_booking_event_reservation
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: booking_reservation_event
+            baseColumnNames: actor_user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_booking_event_actor
+            onDelete: RESTRICT
+        - createIndex:
+            indexName: idx_booking_event_reservation
+            tableName: booking_reservation_event
+            columns:
+              - column:
+                  name: reservation_id

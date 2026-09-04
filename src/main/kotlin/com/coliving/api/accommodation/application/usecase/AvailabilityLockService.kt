@@ -53,6 +53,18 @@ class AvailabilityLockService(
         slotRepository.saveAll(slots)
     }
 
+    @Transactional
+    override fun confirmRange(unitId: UUID, from: LocalDate, to: LocalDate, reservationId: UUID) {
+        requireUnitExists(unitId)
+        val range = validateRange(from, to)
+        val slots = slotRepository.findRange(unitId, range.first, range.second)
+        // Only confirm rows held by this reservation; a host block stays untouched.
+        slots.filter {
+            it.reservationId == reservationId && it.state == AvailabilityState.BLOQUEADO
+        }.forEach { it.confirm() }
+        slotRepository.saveAll(slots)
+    }
+
     override fun isRangeAvailable(unitId: UUID, from: LocalDate, to: LocalDate): Boolean {
         val range = validateRange(from, to)
         return slotRepository.isRangeAvailable(unitId, range.first, range.second)
