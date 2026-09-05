@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4.0.0-search-schema
+      author: coliving
+      remarks: Creates the search bounded-context schema (favorites). The
+        publication reference is a plain UUID (no FK); the user reference
+        points to identity_user per the architecture rule.
+      changes:
+        - createTable:
+            tableName: search_favorite
+            remarks: User bookmark of a published listing (RF-034).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_search_favorite
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: publication_id
+                  type: UUID
+                  remarks: Reference to accommodation_publication (no FK).
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: search_favorite
+            columnNames: user_id, publication_id
+            constraintName: uq_search_favorite_user_publication
+        - addForeignKeyConstraint:
+            baseTableName: search_favorite
+            baseColumnNames: user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_search_favorite_user
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_search_favorite_user
+            tableName: search_favorite
+            columns:
+              - column:
+                  name: user_id
