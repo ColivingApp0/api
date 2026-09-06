@@ -1,6 +1,7 @@
 package com.coliving.api.accommodation.domain.model
 
 import com.coliving.api.accommodation.domain.enums.PublicationStatus
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -13,6 +14,7 @@ class Publication(
     val unitId: UUID,
     title: String,
     status: PublicationStatus,
+    val createdAt: Instant,
 ) {
 
     var title: String = title
@@ -20,6 +22,14 @@ class Publication(
 
     var status: PublicationStatus = status
         private set
+
+    /** Last transition moment (used by the search recency ordering, RF-032). */
+    var updatedAt: Instant = createdAt
+        private set
+
+    fun touch(now: Instant) {
+        updatedAt = now
+    }
 
     fun publish() {
         require(
@@ -45,12 +55,13 @@ class Publication(
     }
 
     companion object {
-        fun create(id: UUID, unitId: UUID, title: String): Publication =
+        fun create(id: UUID, unitId: UUID, title: String, now: Instant): Publication =
             Publication(
                 id = id,
                 unitId = unitId,
                 title = title.trim(),
                 status = PublicationStatus.BORRADOR,
+                createdAt = now,
             )
     }
 }

@@ -114,14 +114,14 @@ object AccommodationMappers {
             unitId = domain.unitId,
             title = domain.title,
             status = domain.status,
-            createdAt = Instant.now(),
-            updatedAt = Instant.now(),
+            createdAt = domain.createdAt,
+            updatedAt = domain.updatedAt,
         )
 
     fun copyInto(entity: PublicationEntity, domain: Publication): PublicationEntity {
         entity.title = domain.title
         entity.status = domain.status
-        entity.updatedAt = Instant.now()
+        entity.updatedAt = domain.updatedAt
         return entity
     }
 
@@ -131,6 +131,7 @@ object AccommodationMappers {
             unitId = entity.unitId,
             title = entity.title,
             status = entity.status,
+            createdAt = entity.createdAt,
         )
 
     // ---------- Pricing ----------
