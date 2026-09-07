@@ -23,4 +23,11 @@ interface UnitBookingQuery {
 
     /** Whether the unit belongs to a property owned by [hostId]. */
     fun isHostOfUnit(unitId: UUID, hostId: UUID): Boolean
+
+    /**
+     * Owner of the unit, or null when the unit (or its property) does not
+     * exist. Consumed by `messaging` to resolve the host party of a
+     * reservation conversation (RF-050) without duplicating ownership data.
+     */
+    fun hostOfUnit(unitId: UUID): UUID?
 }

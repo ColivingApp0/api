@@ -47,6 +47,9 @@ interface UnitCatalogPort {
     fun unitIdsOfHost(hostId: UUID): List<UUID>
 
     fun isHostOfUnit(unitId: UUID, hostId: UUID): Boolean
+
+    /** Owner of the unit, or null when the unit does not exist (messaging, RF-050). */
+    fun hostOfUnit(unitId: UUID): UUID?
 }
 
 /**
