@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/changesets/2.0.0-accommodation-schema.yaml
   - include:
       file: db/changelog/changesets/3.0.0-booking-schema.yaml
+  - include:
+      file: db/changelog/changesets/4.0.0-search-schema.yaml
