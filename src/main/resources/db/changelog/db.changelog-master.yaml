@@ -9,3 +9,5 @@ databaseChangeLog:
       file: db/changelog/changesets/3.0.0-booking-schema.yaml
   - include:
       file: db/changelog/changesets/4.0.0-search-schema.yaml
+  - include:
+      file: db/changelog/changesets/5.0.0-messaging-schema.yaml
