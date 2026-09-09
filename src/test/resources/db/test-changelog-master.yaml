@@ -35,3 +35,6 @@ databaseChangeLog:
 
   - include:
       file: db/changelog/changesets/4.0.0-search-schema.yaml
+
+  - include:
+      file: db/changelog/changesets/5.0.0-messaging-schema.yaml
