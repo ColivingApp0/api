@@ -32,4 +32,6 @@ class AccommodationCatalogProvider(
 
     override fun isHostOfUnit(unitId: UUID, hostId: UUID): Boolean =
         unitBookingQuery.isHostOfUnit(unitId, hostId)
+
+    override fun hostOfUnit(unitId: UUID): UUID? = unitBookingQuery.hostOfUnit(unitId)
 }

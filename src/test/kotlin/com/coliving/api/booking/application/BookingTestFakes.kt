@@ -65,6 +65,9 @@ class FakeUnitCatalogPort : UnitCatalogPort {
     override fun isHostOfUnit(unitId: UUID, hostId: UUID): Boolean =
         unitId in hostUnits && hostId == ownerHostId
 
+    override fun hostOfUnit(unitId: UUID): UUID? =
+        if (unitId in hostUnits) ownerHostId else null
+
     companion object {
         val UNIT_ID: UUID = UUID.randomUUID()
     }

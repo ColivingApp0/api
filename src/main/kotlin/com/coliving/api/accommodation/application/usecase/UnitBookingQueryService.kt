@@ -50,9 +50,13 @@ class UnitBookingQueryService(
             .map { it.id }
 
     @Transactional(readOnly = true)
-    override fun isHostOfUnit(unitId: UUID, hostId: UUID): Boolean {
-        val unit = unitRepository.findById(unitId) ?: return false
-        val property = propertyRepository.findById(unit.propertyId) ?: return false
-        return property.hostId == hostId
+    override fun isHostOfUnit(unitId: UUID, hostId: UUID): Boolean =
+        hostOfUnit(unitId) == hostId
+
+    @Transactional(readOnly = true)
+    override fun hostOfUnit(unitId: UUID): UUID? {
+        val unit = unitRepository.findById(unitId) ?: return null
+        val property = propertyRepository.findById(unit.propertyId) ?: return null
+        return property.hostId
     }
 }
