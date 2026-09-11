@@ -1,0 +1,128 @@
+databaseChangeLog:
+  - changeSet:
+      id: 6.0.0-community-schema
+      author: coliving
+      remarks: Creates the community bounded-context schema (activities of a
+        property and their authorized participants). The property reference is a
+        plain UUID (no FK); the user references point to identity_user per the
+        architecture rule (RF-060, RF-061).
+      changes:
+        - createTable:
+            tableName: community_activity
+            remarks: Activity created by the host of a property (RF-060).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_community_activity
+              - column:
+                  name: property_id
+                  type: UUID
+                  remarks: Reference to accommodation_property (no FK).
+                  constraints:
+                    nullable: false
+              - column:
+                  name: host_id
+                  type: UUID
+                  remarks: Host that created the activity and owns its property.
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: scheduled_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: capacity
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: community_activity
+            baseColumnNames: host_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_community_activity_host
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_community_activity_property
+            tableName: community_activity
+            columns:
+              - column:
+                  name: property_id
+        - createTable:
+            tableName: community_activity_participant
+            remarks: Authorized participant of an activity; the enabled community (RF-060) and the state of their attendance (RF-061).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_community_activity_participant
+              - column:
+                  name: activity_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: registered_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: community_activity_participant
+            columnNames: activity_id, user_id
+            constraintName: uq_community_participant_activity_user
+        - addForeignKeyConstraint:
+            baseTableName: community_activity_participant
+            baseColumnNames: activity_id
+            referencedTableName: community_activity
+            referencedColumnNames: id
+            constraintName: fk_community_participant_activity
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: community_activity_participant
+            baseColumnNames: user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_community_participant_user
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_community_participant_user
+            tableName: community_activity_participant
+            columns:
+              - column:
+                  name: user_id
