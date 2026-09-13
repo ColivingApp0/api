@@ -11,6 +11,14 @@ logging:
 server:
   port: 8080
 
+# The API documentation publishes the whole surface of the API, so production
+# keeps it off unless the deployment opts in with SWAGGER_ENABLED=true.
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
+
 # Production never enables the dev bootstrap admin.
 identity:
   bootstrap:

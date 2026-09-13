@@ -11,6 +11,7 @@ import com.coliving.api.community.application.usecase.ConfirmAttendanceService
 import com.coliving.api.community.application.usecase.ListActivitiesService
 import com.coliving.api.community.application.usecase.WithdrawFromActivityService
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import java.util.UUID
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -26,6 +27,10 @@ import org.springframework.web.bind.annotation.RestController
  * activity is decided by the application service from the enabled participants,
  * not by a role.
  */
+@Tag(
+    name = "Community",
+    description = "Community activities for residents (RF-061, RF-062); available to any authenticated user.",
+)
 @RestController
 @RequestMapping("/api/v1/community")
 class CommunityActivityController(

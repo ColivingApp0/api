@@ -19,6 +19,11 @@ data class SearchListingsCommand(
     val availableFrom: LocalDate? = null,
     val availableTo: LocalDate? = null,
     val sort: ListingSort = ListingSort.RECENT,
+    // Catalog-based filters (RF-031, RF-083).
+    val services: Set<UUID>? = null,
+    val roomTypeCode: UUID? = null,
+    val accessibilityCode: UUID? = null,
+    val minNights: Int? = null,
 )
 
 data class ListingView(
@@ -28,4 +33,8 @@ data class ListingView(
     val cityId: UUID?,
     val pricePerNight: BigDecimal?,
     val currency: String?,
+    val serviceCodes: Set<UUID> = emptySet(),
+    val roomTypeCode: UUID? = null,
+    val accessibilityCodes: Set<UUID> = emptySet(),
+    val minNights: Int? = null,
 )

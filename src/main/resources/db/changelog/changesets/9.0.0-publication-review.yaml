@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 9.0.0-publication-review
+      author: coliving
+      remarks: Adds the moderation review metadata of a publication (RF-022
+        "enviar a revisión", RF-081). The status VARCHAR already admits the
+        new EN_REVISION value (stored as a string); these columns record who
+        reviewed, when, the decision and its mandatory note.
+      changes:
+        - addColumn:
+            tableName: accommodation_publication
+            columns:
+              - column:
+                  name: review_requested_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: review_decision
+                  type: VARCHAR(40)
+              - column:
+                  name: review_moderator_id
+                  type: UUID
+                  remarks: Reference to identity_user (no FK, cross-context rule).
+              - column:
+                  name: review_note
+                  type: TEXT
+              - column:
+                  name: review_source_status
+                  type: VARCHAR(50)
+                  remarks: State the publication came from when review started.

@@ -2,10 +2,12 @@ package com.coliving.api.accommodation.presentation.dto
 
 import com.coliving.api.accommodation.domain.enums.CancellationPolicy
 import com.coliving.api.accommodation.domain.enums.Currency
+import com.coliving.api.accommodation.domain.enums.ReviewDecision
 import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
 import java.math.BigDecimal
 import java.time.LocalTime
 import java.util.UUID
@@ -43,6 +45,10 @@ data class CreateUnitRequest(
 
     @field:Min(0, message = "bathrooms must not be negative")
     val bathrooms: Int = 1,
+
+    // Catalog references (RF-031, RF-083); optional.
+    val typeCode: UUID? = null,
+    val accessibilityCodes: List<UUID> = emptyList(),
 )
 
 data class UpdateUnitRequest(
@@ -60,11 +66,28 @@ data class UpdateUnitRequest(
 
     @field:Min(0, message = "bathrooms must not be negative")
     val bathrooms: Int = 1,
+
+    // Catalog references (RF-031, RF-083); null keeps the current values.
+    val typeCode: UUID? = null,
+    val accessibilityCodes: List<UUID>? = null,
 )
 
 data class CreatePublicationRequest(
     @field:NotBlank(message = "title is required")
     val title: String = "",
+
+    // Searchable catalog references (RF-031); optional.
+    val services: List<UUID> = emptyList(),
+    val applicableRuleCodes: List<UUID> = emptyList(),
+)
+
+/** RF-031: updates the searchable catalog references of a listing. */
+data class ConfigureCatalogReferencesRequest(
+    @field:NotNull(message = "services is required")
+    val services: List<UUID>? = null,
+
+    @field:NotNull(message = "applicableRuleCodes is required")
+    val applicableRuleCodes: List<UUID>? = null,
 )
 
 data class ConfigurePricingRequest(
@@ -93,4 +116,20 @@ data class ConfigureRulesRequest(
     val maxNights: Int = 365,
 
     val houseRules: List<String> = emptyList(),
+)
+
+/** Moderation decision over a publication under review (RF-081). */
+data class ReviewPublicationRequest(
+    @field:NotNull(message = "decision is required")
+    val decision: ReviewDecision? = null,
+
+    @field:Size(max = 1000, message = "note must not exceed 1000 characters")
+    val note: String? = null,
+)
+
+/** Reports a publication to moderation (RF-025); the reason is mandatory. */
+data class ReportPublicationRequest(
+    @field:NotBlank(message = "reason is required")
+    @field:Size(max = 1000, message = "reason must not exceed 1000 characters")
+    val reason: String,
 )

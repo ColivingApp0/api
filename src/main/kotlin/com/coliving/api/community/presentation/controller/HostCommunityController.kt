@@ -9,6 +9,7 @@ import com.coliving.api.community.application.usecase.CreateActivityService
 import com.coliving.api.community.application.usecase.ListActivitiesService
 import com.coliving.api.community.presentation.dto.CreateActivityRequest
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -27,6 +28,10 @@ import org.springframework.web.bind.annotation.RestController
  * activity for the authorized residents, list the activities of their
  * properties and inspect who is taking part.
  */
+@Tag(
+    name = "Host Community",
+    description = "Activities created by the ANFITRION for the authorized residents of their properties (RF-060).",
+)
 @RestController
 @RequestMapping("/api/v1/host/community/activities")
 class HostCommunityController(

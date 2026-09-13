@@ -77,3 +77,18 @@ data class RejectCaseCommand(
     val moderatorId: UUID,
     val reason: String,
 )
+
+/**
+ * Operational indicators of the support queue (RF-084): case counts by state,
+ * measurable average response time and the open publication reports (RF-025)
+ * feeding the pilot's moderation dashboard.
+ */
+data class ModerationMetricsView(
+    val totalCases: Int,
+    val openCases: Int,
+    val inReviewCases: Int,
+    val resolvedCases: Int,
+    val rejectedCases: Int,
+    val averageResolutionHours: Double?,
+    val openPublicationReports: Int,
+)

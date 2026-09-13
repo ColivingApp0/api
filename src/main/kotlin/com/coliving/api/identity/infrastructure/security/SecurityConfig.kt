@@ -48,6 +48,16 @@ class SecurityConfig(
                         "/api/v1/auth/password-reset",
                         "/error",
                     ).permitAll()
+                    // API documentation (springdoc). Open so the Swagger UI can
+                    // load the document; both endpoints are disabled by default
+                    // in the prod profile (application-prod.yml).
+                    .requestMatchers(
+                        "/v3/api-docs",
+                        "/v3/api-docs/**",
+                        "/v3/api-docs.yaml",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                    ).permitAll()
                     .requestMatchers("/api/v1/admin/**")
                     .hasAnyRole("MODERADOR", "ADMINISTRADOR")
                     .anyRequest()

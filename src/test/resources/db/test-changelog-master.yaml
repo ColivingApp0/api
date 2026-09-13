@@ -50,3 +50,12 @@ databaseChangeLog:
 
   - include:
       file: db/changelog/changesets/8.0.0-reputation-schema.yaml
+
+  - include:
+      file: db/changelog/changesets/9.0.0-publication-review.yaml
+
+  - include:
+      file: db/changelog/changesets/9.1.0-catalog-schema.yaml
+
+  - include:
+      file: db/changelog/changesets/9.2.0-listing-catalog-references.yaml

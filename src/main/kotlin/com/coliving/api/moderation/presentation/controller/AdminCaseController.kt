@@ -4,12 +4,14 @@ import com.coliving.api.moderation.application.dto.AssignCaseCommand
 import com.coliving.api.moderation.application.dto.CaseDetailView
 import com.coliving.api.moderation.application.dto.CaseSearchQuery
 import com.coliving.api.moderation.application.dto.CaseView
+import com.coliving.api.moderation.application.dto.ModerationMetricsView
 import com.coliving.api.moderation.application.dto.RejectCaseCommand
 import com.coliving.api.moderation.application.dto.ResolveCaseCommand
 import com.coliving.api.moderation.application.dto.StartCaseReviewCommand
 import com.coliving.api.moderation.application.usecase.AssignCaseService
 import com.coliving.api.moderation.application.usecase.GetCaseService
 import com.coliving.api.moderation.application.usecase.ListCasesService
+import com.coliving.api.moderation.application.usecase.OperationsIndicatorsService
 import com.coliving.api.moderation.application.usecase.RejectCaseService
 import com.coliving.api.moderation.application.usecase.ResolveCaseService
 import com.coliving.api.moderation.application.usecase.StartCaseReviewService
@@ -19,6 +21,7 @@ import com.coliving.api.moderation.domain.enums.CaseType
 import com.coliving.api.moderation.presentation.dto.ResolveCaseRequest
 import com.coliving.api.moderation.presentation.dto.RejectCaseRequest
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.util.UUID
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -35,6 +38,10 @@ import org.springframework.web.bind.annotation.RestController
  * requires MODERADOR or ADMINISTRADOR (SecurityConfig), so the moderator
  * identity is taken from the authenticated principal.
  */
+@Tag(
+    name = "Admin Cases",
+    description = "Support queue of the moderation team (RF-082): indicators, search, assignment and the review/resolve/reject chain; admin namespace.",
+)
 @RestController
 @RequestMapping("/api/v1/admin/cases")
 class AdminCaseController(
@@ -44,7 +51,12 @@ class AdminCaseController(
     private val startCaseReviewService: StartCaseReviewService,
     private val resolveCaseService: ResolveCaseService,
     private val rejectCaseService: RejectCaseService,
+    private val operationsIndicatorsService: OperationsIndicatorsService,
 ) {
+
+    /** Operational indicators of the pilot's support queue (RF-084). */
+    @GetMapping("/metrics")
+    fun metrics(): ModerationMetricsView = operationsIndicatorsService.indicators()
 
     /** Queue with the filters the team needs; `onlyOpen` hides closed cases. */
     @GetMapping
@@ -105,6 +117,10 @@ class AdminCaseController(
  * Follow-up for the user who raised a case: they see the state of their own
  * reports and disputes (RF-052, RF-072) without accessing anyone else's.
  */
+@Tag(
+    name = "Cases",
+    description = "Follow-up for the user who raised a case: their own reports and disputes (RF-052, RF-072).",
+)
 @RestController
 @RequestMapping("/api/v1/cases")
 class MyCaseController(

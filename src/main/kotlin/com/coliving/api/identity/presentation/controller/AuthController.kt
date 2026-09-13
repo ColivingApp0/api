@@ -18,6 +18,8 @@ import com.coliving.api.identity.presentation.dto.RegisterRequest
 import com.coliving.api.identity.presentation.dto.RequestPasswordResetRequest
 import com.coliving.api.identity.presentation.dto.ResetPasswordRequest
 import com.coliving.api.identity.presentation.dto.VerifyEmailRequest
+import io.swagger.v3.oas.annotations.security.SecurityRequirements
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -31,6 +33,10 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * Public authentication endpoints (RF-001, RF-002, RF-003).
  */
+@Tag(
+    name = "Auth",
+    description = "Authentication flows (RF-001, RF-002, RF-003): register, verify e-mail, log in, log out and password reset. All but log out are public.",
+)
 @RestController
 @RequestMapping("/api/v1/auth")
 class AuthController(
@@ -42,6 +48,7 @@ class AuthController(
     private val resetPasswordService: ResetPasswordService,
 ) {
 
+    @SecurityRequirements
     @PostMapping("/register")
     fun register(@Valid @RequestBody request: RegisterRequest): ResponseEntity<RegisterUserResult> {
         val result = registerUserService.register(
@@ -53,12 +60,14 @@ class AuthController(
         return ResponseEntity.status(HttpStatus.CREATED).body(result)
     }
 
+    @SecurityRequirements
     @PostMapping("/verify-email")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun verifyEmail(@Valid @RequestBody request: VerifyEmailRequest) {
         verifyEmailService.verify(VerifyEmailCommand(token = request.token))
     }
 
+    @SecurityRequirements
     @PostMapping("/login")
     fun login(@Valid @RequestBody request: LoginRequest): LoginResult =
         authenticateUserService.login(
@@ -76,6 +85,7 @@ class AuthController(
         logoutService.logout(rawToken)
     }
 
+    @SecurityRequirements
     @PostMapping("/password-reset/request")
     @ResponseStatus(HttpStatus.ACCEPTED)
     fun requestPasswordReset(@Valid @RequestBody request: RequestPasswordResetRequest) {
@@ -84,6 +94,7 @@ class AuthController(
         )
     }
 
+    @SecurityRequirements
     @PostMapping("/password-reset")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun resetPassword(@Valid @RequestBody request: ResetPasswordRequest) {

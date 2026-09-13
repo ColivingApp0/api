@@ -14,12 +14,14 @@ import com.coliving.api.accommodation.application.dto.UnblockDatesCommand
 import com.coliving.api.accommodation.application.dto.UpdatePropertyCommand
 import com.coliving.api.accommodation.application.dto.UpdateUnitCommand
 import com.coliving.api.accommodation.application.dto.ConfigurePricingCommand
+import com.coliving.api.accommodation.application.dto.ConfigureCatalogReferencesCommand
 import com.coliving.api.accommodation.application.dto.ConfigureRulesCommand
 import com.coliving.api.accommodation.application.usecase.AvailabilityLockService
 import com.coliving.api.accommodation.application.usecase.PropertyService
 import com.coliving.api.accommodation.application.usecase.PublicationService
 import com.coliving.api.accommodation.application.usecase.UnitService
 import com.coliving.api.accommodation.presentation.dto.ConfigurePricingRequest
+import com.coliving.api.accommodation.presentation.dto.ConfigureCatalogReferencesRequest
 import com.coliving.api.accommodation.presentation.dto.ConfigureRulesRequest
 import com.coliving.api.accommodation.presentation.dto.CreatePropertyRequest
 import com.coliving.api.accommodation.presentation.dto.CreatePublicationRequest
@@ -27,6 +29,7 @@ import com.coliving.api.accommodation.presentation.dto.CreateUnitRequest
 import com.coliving.api.accommodation.presentation.dto.UpdatePropertyRequest
 import com.coliving.api.accommodation.presentation.dto.UpdateUnitRequest
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.time.LocalDate
 import java.util.UUID
@@ -50,6 +53,10 @@ import org.springframework.web.bind.annotation.RestController
  * Host endpoints (ANFITRION only). The role is checked via the shared
  * principal; ownership is enforced inside the application services.
  */
+@Tag(
+    name = "Host Accommodation",
+    description = "Properties, units, publications, pricing, rules and availability of the ANFITRION (RF-020..RF-024).",
+)
 @RestController
 @RequestMapping("/api/v1/host")
 class HostAccommodationController(
@@ -120,6 +127,8 @@ class HostAccommodationController(
                 bedrooms = request.bedrooms,
                 beds = request.beds,
                 bathrooms = request.bathrooms,
+                typeCode = request.typeCode,
+                accessibilityCodes = request.accessibilityCodes.toSet(),
             ),
         )
     }
@@ -145,6 +154,8 @@ class HostAccommodationController(
                 bedrooms = request.bedrooms,
                 beds = request.beds,
                 bathrooms = request.bathrooms,
+                typeCode = request.typeCode,
+                accessibilityCodes = request.accessibilityCodes?.toSet(),
             ),
         )
     }
@@ -163,6 +174,25 @@ class HostAccommodationController(
                 unitId = id,
                 hostId = current.userId,
                 title = request.title,
+                services = request.services.toSet(),
+                applicableRuleCodes = request.applicableRuleCodes.toSet(),
+            ),
+        )
+    }
+
+    /** RF-031: updates the searchable catalog references of the listing. */
+    @PutMapping("/publications/{id}/catalog-references")
+    fun configureCatalogReferences(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+        @Valid @RequestBody request: ConfigureCatalogReferencesRequest,
+    ): PublicationView = requireHost(current) {
+        publicationService.configureCatalogReferences(
+            ConfigureCatalogReferencesCommand(
+                publicationId = id,
+                hostId = current.userId,
+                services = request.services.orEmpty().toSet(),
+                applicableRuleCodes = request.applicableRuleCodes.orEmpty().toSet(),
             ),
         )
     }
@@ -184,6 +214,12 @@ class HostAccommodationController(
         @AuthenticationPrincipal current: CurrentUser,
         @PathVariable id: UUID,
     ): PublicationView = requireHost(current) { publicationService.hide(id, current.userId) }
+
+    @PostMapping("/publications/{id}/request-review")
+    fun requestReview(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+    ): PublicationView = requireHost(current) { publicationService.requestReview(id, current.userId) }
 
     @PostMapping("/publications/{id}/archive")
     fun archive(
