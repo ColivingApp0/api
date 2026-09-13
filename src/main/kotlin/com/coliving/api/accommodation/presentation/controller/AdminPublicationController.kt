@@ -5,6 +5,7 @@ import com.coliving.api.accommodation.application.usecase.PublicationService
 import com.coliving.api.accommodation.domain.enums.PublicationStatus
 import com.coliving.api.accommodation.presentation.dto.ReviewPublicationRequest
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.util.UUID
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -22,6 +23,10 @@ import org.springframework.web.bind.annotation.RestController
  * authenticated principal. Reviews may happen before or after publication: the
  * queue defaults to the listings currently under review (EN_REVISION).
  */
+@Tag(
+    name = "Admin Publications",
+    description = "Moderation queue of publications (RF-081); the admin namespace requires MODERADOR or ADMINISTRADOR.",
+)
 @RestController
 @RequestMapping("/api/v1/admin/publications")
 class AdminPublicationController(

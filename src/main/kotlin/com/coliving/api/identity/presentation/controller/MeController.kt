@@ -16,6 +16,7 @@ import com.coliving.api.identity.domain.enums.DocumentType
 import com.coliving.api.identity.presentation.dto.ManageConsentRequest
 import com.coliving.api.identity.presentation.dto.SelectRoleRequest
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -36,6 +37,10 @@ import org.springframework.web.multipart.MultipartFile
  * selection and verification documents. Profile data now lives under
  * `/api/v1/profile` in the `profile` bounded context.
  */
+@Tag(
+    name = "Me Identity",
+    description = "Account, consents, role selection and verification documents of the authenticated user (RF-004, RF-012).",
+)
 @RestController
 @RequestMapping("/api/v1/users/me")
 class MeController(

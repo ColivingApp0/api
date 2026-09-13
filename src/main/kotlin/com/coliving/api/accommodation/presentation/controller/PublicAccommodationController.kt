@@ -8,6 +8,7 @@ import com.coliving.api.accommodation.application.usecase.PublicationService
 import com.coliving.api.accommodation.application.usecase.ReportPublicationService
 import com.coliving.api.accommodation.presentation.dto.ReportPublicationRequest
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.time.LocalDate
 import java.util.UUID
@@ -27,6 +28,10 @@ import org.springframework.web.bind.annotation.RestController
  * Read endpoints for any authenticated user. Only PUBLICADA publications are
  * exposed.
  */
+@Tag(
+    name = "Publications",
+    description = "Read endpoints for any authenticated user; only PUBLICADA publications are exposed (RF-021, RF-023).",
+)
 @RestController
 @RequestMapping("/api/v1/publications")
 class PublicAccommodationController(

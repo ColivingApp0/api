@@ -8,6 +8,7 @@ import com.coliving.api.messaging.application.usecase.ReportService
 import com.coliving.api.messaging.presentation.dto.BlockUserRequest
 import com.coliving.api.messaging.presentation.dto.ReportConversationRequest
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -25,6 +26,10 @@ import org.springframework.web.bind.annotation.RestController
  * conversation opens a support case in moderation, and blocking a user stops
  * the exchange in both directions.
  */
+@Tag(
+    name = "Messaging Safety",
+    description = "Reporting a conversation and blocking a user (RF-052, RF-053); a report opens a support case in moderation.",
+)
 @RestController
 class MessagingSafetyController(
     private val blockService: BlockService,
