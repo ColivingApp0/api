@@ -45,6 +45,10 @@ data class CreateUnitRequest(
 
     @field:Min(0, message = "bathrooms must not be negative")
     val bathrooms: Int = 1,
+
+    // Catalog references (RF-031, RF-083); optional.
+    val typeCode: UUID? = null,
+    val accessibilityCodes: List<UUID> = emptyList(),
 )
 
 data class UpdateUnitRequest(
@@ -62,11 +66,28 @@ data class UpdateUnitRequest(
 
     @field:Min(0, message = "bathrooms must not be negative")
     val bathrooms: Int = 1,
+
+    // Catalog references (RF-031, RF-083); null keeps the current values.
+    val typeCode: UUID? = null,
+    val accessibilityCodes: List<UUID>? = null,
 )
 
 data class CreatePublicationRequest(
     @field:NotBlank(message = "title is required")
     val title: String = "",
+
+    // Searchable catalog references (RF-031); optional.
+    val services: List<UUID> = emptyList(),
+    val applicableRuleCodes: List<UUID> = emptyList(),
+)
+
+/** RF-031: updates the searchable catalog references of a listing. */
+data class ConfigureCatalogReferencesRequest(
+    @field:NotNull(message = "services is required")
+    val services: List<UUID>? = null,
+
+    @field:NotNull(message = "applicableRuleCodes is required")
+    val applicableRuleCodes: List<UUID>? = null,
 )
 
 data class ConfigurePricingRequest(

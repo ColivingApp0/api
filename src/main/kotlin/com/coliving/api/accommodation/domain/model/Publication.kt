@@ -21,6 +21,8 @@ class Publication(
     reviewModeratorId: UUID? = null,
     reviewNote: String? = null,
     reviewSourceStatus: PublicationStatus? = null,
+    services: Set<UUID> = emptySet(),
+    applicableRuleCodes: Set<UUID> = emptySet(),
 ) {
 
     var title: String = title
@@ -50,6 +52,17 @@ class Publication(
 
     /** State the listing came from when the review started. */
     var reviewSourceStatus: PublicationStatus? = reviewSourceStatus
+        private set
+
+    /**
+     * Services offered by the listing (SERVICIO catalog entries) and the
+     * applicable rules of the house (REGLA catalog entries) — the searchable
+     * catalog references of RF-031, managed in the catalogs of RF-083.
+     */
+    var services: Set<UUID> = services
+        private set
+
+    var applicableRuleCodes: Set<UUID> = applicableRuleCodes
         private set
 
     fun touch(now: Instant) {
@@ -127,6 +140,20 @@ class Publication(
         reviewDecision = decision
         reviewModeratorId = moderatorId
         reviewNote = note?.trim()?.takeIf { it.isNotEmpty() }
+        updatedAt = now
+    }
+
+    /**
+     * Updates the searchable catalog references of the listing (RF-031): the
+     * offered services and the applicable house rules, both catalog entries.
+     */
+    fun configureCatalogReferences(
+        services: Set<UUID>,
+        applicableRuleCodes: Set<UUID>,
+        now: Instant,
+    ) {
+        this.services = services
+        this.applicableRuleCodes = applicableRuleCodes
         updatedAt = now
     }
 

@@ -25,6 +25,10 @@ class AccommodationSearchProvider(
                 pricePerNight = info.pricePerNight,
                 currency = info.currency,
                 updatedAt = info.publishedAt,
+                serviceCodes = info.serviceCodes,
+                roomTypeCode = info.roomTypeCode,
+                accessibilityCodes = info.accessibilityCodes,
+                minNights = info.minNights,
             )
         }
 

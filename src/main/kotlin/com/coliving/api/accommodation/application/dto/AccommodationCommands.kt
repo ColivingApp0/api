@@ -35,6 +35,8 @@ data class CreateUnitCommand(
     val bedrooms: Int,
     val beds: Int,
     val bathrooms: Int,
+    val typeCode: UUID? = null,
+    val accessibilityCodes: Set<UUID> = emptySet(),
 )
 
 data class UpdateUnitCommand(
@@ -45,12 +47,24 @@ data class UpdateUnitCommand(
     val bedrooms: Int,
     val beds: Int,
     val bathrooms: Int,
+    val typeCode: UUID? = null,
+    val accessibilityCodes: Set<UUID>? = null,
 )
 
 data class CreatePublicationCommand(
     val unitId: UUID,
     val hostId: UUID,
     val title: String,
+    val services: Set<UUID> = emptySet(),
+    val applicableRuleCodes: Set<UUID> = emptySet(),
+)
+
+/** RF-031: updates the searchable catalog references of a listing. */
+data class ConfigureCatalogReferencesCommand(
+    val publicationId: UUID,
+    val hostId: UUID,
+    val services: Set<UUID>,
+    val applicableRuleCodes: Set<UUID>,
 )
 
 data class ConfigurePricingCommand(

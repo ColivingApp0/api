@@ -81,6 +81,13 @@ class UnitEntity(
     @Column(name = "bathrooms", nullable = false)
     var bathrooms: Int,
 
+    // Catalog references (RF-031, RF-083): plain UUIDs, no FK.
+    @Column(name = "type_code")
+    var typeCode: UUID?,
+
+    @Column(name = "accessibility_codes", columnDefinition = "TEXT")
+    var accessibilityCodes: String?,
+
     @Column(name = "created_at", nullable = false)
     var createdAt: java.time.Instant,
 
@@ -127,6 +134,13 @@ class PublicationEntity(
     @Enumerated(EnumType.STRING)
     @Column(name = "review_source_status", length = 50)
     var reviewSourceStatus: PublicationStatus?,
+
+    // Searchable catalog references (RF-031): csv of catalog entry UUIDs.
+    @Column(name = "services", columnDefinition = "TEXT")
+    var services: String?,
+
+    @Column(name = "applicable_rule_codes", columnDefinition = "TEXT")
+    var applicableRuleCodes: String?,
 )
 
 @Entity

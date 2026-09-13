@@ -17,6 +17,10 @@ data class ListingFacet(
     val pricePerNight: BigDecimal?,
     val currency: String?,
     val updatedAt: Instant,
+    val serviceCodes: Set<UUID> = emptySet(),
+    val roomTypeCode: UUID? = null,
+    val accessibilityCodes: Set<UUID> = emptySet(),
+    val minNights: Int? = null,
 )
 
 interface PublicationCatalogPort {

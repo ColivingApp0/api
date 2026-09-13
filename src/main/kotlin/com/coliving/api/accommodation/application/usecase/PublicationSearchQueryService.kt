@@ -6,6 +6,7 @@ import com.coliving.api.accommodation.domain.enums.PublicationStatus
 import com.coliving.api.accommodation.domain.repository.PropertyRepository
 import com.coliving.api.accommodation.domain.repository.PublicationRepository
 import com.coliving.api.accommodation.domain.repository.PricingRepository
+import com.coliving.api.accommodation.domain.repository.RuleRepository
 import com.coliving.api.accommodation.domain.repository.UnitRepository
 import java.util.UUID
 import org.springframework.stereotype.Service
@@ -22,6 +23,7 @@ class PublicationSearchQueryService(
     private val unitRepository: UnitRepository,
     private val propertyRepository: PropertyRepository,
     private val pricingRepository: PricingRepository,
+    private val ruleRepository: RuleRepository,
 ) : PublicationSearchQuery {
 
     @Transactional(readOnly = true)
@@ -30,6 +32,7 @@ class PublicationSearchQueryService(
             val unit = unitRepository.findById(publication.unitId)
             val property = unit?.let { propertyRepository.findById(it.propertyId) }
             val pricing = pricingRepository.findByPublication(publication.id)
+            val rule = ruleRepository.findByPublication(publication.id)
             PublishedListingInfo(
                 publicationId = publication.id,
                 unitId = publication.unitId,
@@ -38,6 +41,10 @@ class PublicationSearchQueryService(
                 pricePerNight = pricing?.basePricePerNight,
                 currency = pricing?.currency?.name,
                 publishedAt = publication.updatedAt,
+                serviceCodes = publication.services,
+                roomTypeCode = unit?.typeCode,
+                accessibilityCodes = unit?.accessibilityCodes ?: emptySet(),
+                minNights = rule?.minNights,
             )
         }
 

@@ -54,6 +54,25 @@ class SearchListingsService(
                 unitAvailabilityPort.isRangeAvailable(facet.unitId, command.availableFrom!!, command.availableTo!!)
             }
         }
+        // Catalog-based filters (RF-031): services, room type, accessibility
+        // and the minimum stay a listing admits.
+        command.services?.takeIf { it.isNotEmpty() }?.let { requested ->
+            listings = listings.filter { facet ->
+                facet.serviceCodes.containsAll(requested)
+            }
+        }
+        command.roomTypeCode?.let { roomType ->
+            listings = listings.filter { it.roomTypeCode == roomType }
+        }
+        command.accessibilityCode?.let { accessibility ->
+            listings = listings.filter { accessibility in it.accessibilityCodes }
+        }
+        command.minNights?.let { minimum ->
+            listings = listings.filter { facet ->
+                // A listing without configured rules admits any stay.
+                (facet.minNights ?: 1) <= minimum
+            }
+        }
 
         val sorted = when (command.sort) {
             ListingSort.PRICE_ASC -> listings.sortedWith(
@@ -76,6 +95,10 @@ class SearchListingsService(
                 cityId = facet.cityId,
                 pricePerNight = facet.pricePerNight,
                 currency = facet.currency,
+                serviceCodes = facet.serviceCodes,
+                roomTypeCode = facet.roomTypeCode,
+                accessibilityCodes = facet.accessibilityCodes,
+                minNights = facet.minNights,
             )
         }
     }

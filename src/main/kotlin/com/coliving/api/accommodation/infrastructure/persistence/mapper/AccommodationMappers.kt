@@ -81,6 +81,8 @@ object AccommodationMappers {
             bedrooms = domain.bedrooms,
             beds = domain.beds,
             bathrooms = domain.bathrooms,
+            typeCode = domain.typeCode,
+            accessibilityCodes = domain.accessibilityCodes.joinToString(SEPARATOR),
             createdAt = Instant.now(),
             updatedAt = Instant.now(),
         )
@@ -91,6 +93,8 @@ object AccommodationMappers {
         entity.bedrooms = domain.bedrooms
         entity.beds = domain.beds
         entity.bathrooms = domain.bathrooms
+        entity.typeCode = domain.typeCode
+        entity.accessibilityCodes = domain.accessibilityCodes.joinToString(SEPARATOR)
         entity.updatedAt = Instant.now()
         return entity
     }
@@ -104,6 +108,9 @@ object AccommodationMappers {
             bedrooms = entity.bedrooms,
             beds = entity.beds,
             bathrooms = entity.bathrooms,
+            typeCode = entity.typeCode,
+            accessibilityCodes = entity.accessibilityCodes?.split(SEPARATOR).orEmpty()
+                .filter { it.isNotBlank() }.map { UUID.fromString(it) }.toSet(),
         )
 
     // ---------- Publication ----------
@@ -121,6 +128,8 @@ object AccommodationMappers {
             reviewModeratorId = domain.reviewModeratorId,
             reviewNote = domain.reviewNote,
             reviewSourceStatus = domain.reviewSourceStatus,
+            services = domain.services.joinToString(SEPARATOR),
+            applicableRuleCodes = domain.applicableRuleCodes.joinToString(SEPARATOR),
         )
 
     fun copyInto(entity: PublicationEntity, domain: Publication): PublicationEntity {
@@ -132,6 +141,8 @@ object AccommodationMappers {
         entity.reviewModeratorId = domain.reviewModeratorId
         entity.reviewNote = domain.reviewNote
         entity.reviewSourceStatus = domain.reviewSourceStatus
+        entity.services = domain.services.joinToString(SEPARATOR)
+        entity.applicableRuleCodes = domain.applicableRuleCodes.joinToString(SEPARATOR)
         return entity
     }
 
@@ -147,7 +158,15 @@ object AccommodationMappers {
             reviewModeratorId = entity.reviewModeratorId,
             reviewNote = entity.reviewNote,
             reviewSourceStatus = entity.reviewSourceStatus,
+            services = entity.services.toUuidSet(),
+            applicableRuleCodes = entity.applicableRuleCodes.toUuidSet(),
         )
+
+    private fun String?.toUuidSet(): Set<UUID> =
+        this?.split(",").orEmpty()
+            .filter { it.isNotBlank() }
+            .map { UUID.fromString(it.trim()) }
+            .toSet()
 
     // ---------- Pricing ----------
 

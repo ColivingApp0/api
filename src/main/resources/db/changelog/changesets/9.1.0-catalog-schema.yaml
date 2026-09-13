@@ -2,7 +2,8 @@ databaseChangeLog:
   - changeSet:
       id: 9.1.0-catalog-schema
       author: coliving
-      remarks: Creates the managed catalogs of the administration (RF-083):
+      remarks: >-
+        Creates the managed catalogs of the administration (RF-083):
         institutions, faculties, careers, cities, services, rules, room types
         and accessibility features, in a single entry table per category with
         an optional self hierarchy (FACULTAD -> INSTITUCION, CARRERA ->

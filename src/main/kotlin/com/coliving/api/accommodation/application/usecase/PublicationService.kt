@@ -2,6 +2,7 @@ package com.coliving.api.accommodation.application.usecase
 
 import com.coliving.api.accommodation.application.dto.ConfigurePricingCommand
 import com.coliving.api.accommodation.application.dto.ConfigureRulesCommand
+import com.coliving.api.accommodation.application.dto.ConfigureCatalogReferencesCommand
 import com.coliving.api.accommodation.application.dto.CreatePublicationCommand
 import com.coliving.api.accommodation.application.dto.PricingView
 import com.coliving.api.accommodation.application.dto.PropertyView
@@ -53,6 +54,7 @@ class PublicationService(
             title = command.title,
             now = Instant.now(),
         )
+        publication.configureCatalogReferences(command.services, command.applicableRuleCodes, Instant.now())
         publicationRepository.save(publication)
         return publication.toView()
     }
@@ -94,6 +96,18 @@ class PublicationService(
         val publication = publicationRepository.findById(publicationId)
             ?: throw NotFoundException("Publication not found")
         publication.resolveReview(decision, moderatorId, note, Instant.now())
+        publicationRepository.save(publication)
+        return publication.toView()
+    }
+
+    /** RF-031: updates the searchable catalog references of the listing. */
+    fun configureCatalogReferences(command: ConfigureCatalogReferencesCommand): PublicationView {
+        val publication = requireOwned(command.publicationId, command.hostId)
+        publication.configureCatalogReferences(
+            command.services,
+            command.applicableRuleCodes,
+            Instant.now(),
+        )
         publicationRepository.save(publication)
         return publication.toView()
     }
@@ -204,10 +218,22 @@ class PublicationService(
             unitId = unitId,
             title = title,
             status = status,
+            services = services,
+            applicableRuleCodes = applicableRuleCodes,
         )
 
     internal fun Unit.toView(): UnitView =
-        UnitView(id = id, propertyId = propertyId, name = name, maxGuests = maxGuests, bedrooms = bedrooms, beds = beds, bathrooms = bathrooms)
+        UnitView(
+            id = id,
+            propertyId = propertyId,
+            name = name,
+            maxGuests = maxGuests,
+            bedrooms = bedrooms,
+            beds = beds,
+            bathrooms = bathrooms,
+            typeCode = typeCode,
+            accessibilityCodes = accessibilityCodes,
+        )
 
     internal fun Property.toView(): PropertyView =
         PropertyView(id = id, hostId = hostId, title = title, description = description, cityId = cityId, address = address, amenities = amenities, archived = archived)
