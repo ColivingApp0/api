@@ -18,4 +18,8 @@ data class PublishedListingInfo(
     val pricePerNight: BigDecimal?,
     val currency: String?,
     val publishedAt: Instant,
+    val serviceCodes: Set<UUID> = emptySet(),
+    val roomTypeCode: UUID? = null,
+    val accessibilityCodes: Set<UUID> = emptySet(),
+    val minNights: Int? = null,
 )

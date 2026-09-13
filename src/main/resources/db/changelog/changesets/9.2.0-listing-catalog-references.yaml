@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 9.2.0-listing-catalog-references
+      author: coliving
+      remarks: >-
+        Adds the searchable catalog references of RF-031 (managed in the
+        RF-083 catalogs, referenced by plain UUID with no FK): the room type
+        and accessibility features of a unit, and the offered services and
+        applicable rules of a publication.
+      changes:
+        - addColumn:
+            tableName: accommodation_unit
+            columns:
+              - column:
+                  name: type_code
+                  type: UUID
+                  remarks: TIPO_HABITACION catalog entry reference (no FK).
+              - column:
+                  name: accessibility_codes
+                  type: TEXT
+                  remarks: Comma-separated ACCESIBILIDAD catalog entry UUIDs.
+        - addColumn:
+            tableName: accommodation_publication
+            columns:
+              - column:
+                  name: services
+                  type: TEXT
+                  remarks: Comma-separated SERVICIO catalog entry UUIDs.
+              - column:
+                  name: applicable_rule_codes
+                  type: TEXT
+                  remarks: Comma-separated REGLA catalog entry UUIDs.

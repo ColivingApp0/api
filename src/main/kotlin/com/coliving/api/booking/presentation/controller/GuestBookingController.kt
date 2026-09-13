@@ -11,6 +11,7 @@ import com.coliving.api.booking.application.usecase.ListReservationsService
 import com.coliving.api.booking.presentation.dto.CancelRequest
 import com.coliving.api.booking.presentation.dto.CreateReservationRequest
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -28,6 +29,10 @@ import org.springframework.web.bind.annotation.RestController
  * inside the application services; role is checked here, mirroring the host
  * controller.
  */
+@Tag(
+    name = "Reservations",
+    description = "Guest endpoints for reservations (HUESPED_* roles): create, confirm, cancel and list (RF-040, RF-043, RF-044).",
+)
 @RestController
 @RequestMapping("/api/v1/reservations")
 class GuestBookingController(

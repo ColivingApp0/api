@@ -81,6 +81,13 @@ class UnitEntity(
     @Column(name = "bathrooms", nullable = false)
     var bathrooms: Int,
 
+    // Catalog references (RF-031, RF-083): plain UUIDs, no FK.
+    @Column(name = "type_code")
+    var typeCode: UUID?,
+
+    @Column(name = "accessibility_codes", columnDefinition = "TEXT")
+    var accessibilityCodes: String?,
+
     @Column(name = "created_at", nullable = false)
     var createdAt: java.time.Instant,
 
@@ -109,6 +116,31 @@ class PublicationEntity(
 
     @Column(name = "updated_at", nullable = false)
     var updatedAt: java.time.Instant,
+
+    // Moderation review metadata (RF-022 "enviar a revisión", RF-081).
+    @Column(name = "review_requested_at")
+    var reviewRequestedAt: java.time.Instant?,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "review_decision", length = 40)
+    var reviewDecision: com.coliving.api.accommodation.domain.enums.ReviewDecision?,
+
+    @Column(name = "review_moderator_id")
+    var reviewModeratorId: UUID?,
+
+    @Column(name = "review_note", columnDefinition = "TEXT")
+    var reviewNote: String?,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "review_source_status", length = 50)
+    var reviewSourceStatus: PublicationStatus?,
+
+    // Searchable catalog references (RF-031): csv of catalog entry UUIDs.
+    @Column(name = "services", columnDefinition = "TEXT")
+    var services: String?,
+
+    @Column(name = "applicable_rule_codes", columnDefinition = "TEXT")
+    var applicableRuleCodes: String?,
 )
 
 @Entity

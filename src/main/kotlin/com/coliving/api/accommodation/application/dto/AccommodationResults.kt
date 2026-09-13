@@ -28,6 +28,8 @@ data class UnitView(
     val bedrooms: Int,
     val beds: Int,
     val bathrooms: Int,
+    val typeCode: UUID? = null,
+    val accessibilityCodes: Set<UUID> = emptySet(),
 )
 
 data class PublicationView(
@@ -35,6 +37,8 @@ data class PublicationView(
     val unitId: UUID,
     val title: String,
     val status: PublicationStatus,
+    val services: Set<UUID> = emptySet(),
+    val applicableRuleCodes: Set<UUID> = emptySet(),
 )
 
 data class PricingView(

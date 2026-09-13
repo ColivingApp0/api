@@ -13,11 +13,16 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 
 /**
  * Favorites of the authenticated user over published listings (RF-034).
  * Available to any authenticated role; ownership is implicit (the principal).
  */
+@Tag(
+    name = "Favorites",
+    description = "Favorites of the authenticated user over published listings (RF-034).",
+)
 @RestController
 @RequestMapping("/api/v1/favorites")
 class FavoriteController(

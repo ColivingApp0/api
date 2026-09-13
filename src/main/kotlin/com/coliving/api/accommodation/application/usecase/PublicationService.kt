@@ -2,6 +2,7 @@ package com.coliving.api.accommodation.application.usecase
 
 import com.coliving.api.accommodation.application.dto.ConfigurePricingCommand
 import com.coliving.api.accommodation.application.dto.ConfigureRulesCommand
+import com.coliving.api.accommodation.application.dto.ConfigureCatalogReferencesCommand
 import com.coliving.api.accommodation.application.dto.CreatePublicationCommand
 import com.coliving.api.accommodation.application.dto.PricingView
 import com.coliving.api.accommodation.application.dto.PropertyView
@@ -11,6 +12,7 @@ import com.coliving.api.accommodation.application.dto.RulesView
 import com.coliving.api.accommodation.application.dto.UnitView
 import com.coliving.api.accommodation.application.port.out.HostVerificationPort
 import com.coliving.api.accommodation.domain.enums.PublicationStatus
+import com.coliving.api.accommodation.domain.enums.ReviewDecision
 import com.coliving.api.accommodation.domain.model.Pricing
 import com.coliving.api.accommodation.domain.model.Property
 import com.coliving.api.accommodation.domain.model.Publication
@@ -52,6 +54,7 @@ class PublicationService(
             title = command.title,
             now = Instant.now(),
         )
+        publication.configureCatalogReferences(command.services, command.applicableRuleCodes, Instant.now())
         publicationRepository.save(publication)
         return publication.toView()
     }
@@ -63,6 +66,48 @@ class PublicationService(
             throw ConflictException("Host identity is not verified; cannot publish")
         }
         publication.publish()
+        publicationRepository.save(publication)
+        return publication.toView()
+    }
+
+    /**
+     * RF-022 "enviar a revisión" (from BORRADOR) and RF-081 post-publication
+     * review (from PUBLICADA/PAUSADA): the listing goes to EN_REVISION and the
+     * moderation team decides (see [resolveReview]).
+     */
+    fun requestReview(publicationId: UUID, hostId: UUID): PublicationView =
+        transition(publicationId, hostId) { it.requestReview(Instant.now()) }
+
+    /** Moderation queue (RF-081): publications currently under review. */
+    fun findForReview(): List<PublicationView> =
+        publicationRepository.findByStatus(PublicationStatus.EN_REVISION).map { it.toView() }
+
+    /** Admin listing of publications by status (moderation queue filters). */
+    fun findByStatusForAdmin(status: PublicationStatus): List<PublicationView> =
+        publicationRepository.findByStatus(status).map { it.toView() }
+
+    /** Records the moderation decision of a review (RF-081). */
+    fun resolveReview(
+        publicationId: UUID,
+        moderatorId: UUID,
+        decision: ReviewDecision,
+        note: String?,
+    ): PublicationView {
+        val publication = publicationRepository.findById(publicationId)
+            ?: throw NotFoundException("Publication not found")
+        publication.resolveReview(decision, moderatorId, note, Instant.now())
+        publicationRepository.save(publication)
+        return publication.toView()
+    }
+
+    /** RF-031: updates the searchable catalog references of the listing. */
+    fun configureCatalogReferences(command: ConfigureCatalogReferencesCommand): PublicationView {
+        val publication = requireOwned(command.publicationId, command.hostId)
+        publication.configureCatalogReferences(
+            command.services,
+            command.applicableRuleCodes,
+            Instant.now(),
+        )
         publicationRepository.save(publication)
         return publication.toView()
     }
@@ -173,10 +218,22 @@ class PublicationService(
             unitId = unitId,
             title = title,
             status = status,
+            services = services,
+            applicableRuleCodes = applicableRuleCodes,
         )
 
     internal fun Unit.toView(): UnitView =
-        UnitView(id = id, propertyId = propertyId, name = name, maxGuests = maxGuests, bedrooms = bedrooms, beds = beds, bathrooms = bathrooms)
+        UnitView(
+            id = id,
+            propertyId = propertyId,
+            name = name,
+            maxGuests = maxGuests,
+            bedrooms = bedrooms,
+            beds = beds,
+            bathrooms = bathrooms,
+            typeCode = typeCode,
+            accessibilityCodes = accessibilityCodes,
+        )
 
     internal fun Property.toView(): PropertyView =
         PropertyView(id = id, hostId = hostId, title = title, description = description, cityId = cityId, address = address, amenities = amenities, archived = archived)

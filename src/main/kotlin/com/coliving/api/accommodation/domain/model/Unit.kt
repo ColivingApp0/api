@@ -15,6 +15,8 @@ class Unit(
     bedrooms: Int,
     beds: Int,
     bathrooms: Int,
+    typeCode: UUID? = null,
+    accessibilityCodes: Set<UUID> = emptySet(),
 ) {
 
     var name: String = name
@@ -32,12 +34,25 @@ class Unit(
     var bathrooms: Int = bathrooms
         private set
 
+    /**
+     * Room type of the unit, a TIPO_HABITACION catalog entry reference
+     * (RF-031, RF-083). Plain UUID, no FK, like every cross-context reference.
+     */
+    var typeCode: UUID? = typeCode
+        private set
+
+    /** Accessibility features of the unit (ACCESIBILIDAD catalog entries, RF-031). */
+    var accessibilityCodes: Set<UUID> = accessibilityCodes
+        private set
+
     fun update(
         name: String,
         maxGuests: Int,
         bedrooms: Int,
         beds: Int,
         bathrooms: Int,
+        typeCode: UUID? = null,
+        accessibilityCodes: Set<UUID>? = null,
     ) {
         if (maxGuests <= 0) throw InvalidArgumentException("maxGuests must be positive")
         if (bedrooms < 0) throw InvalidArgumentException("bedrooms must not be negative")
@@ -48,6 +63,10 @@ class Unit(
         this.bedrooms = bedrooms
         this.beds = beds
         this.bathrooms = bathrooms
+        // null keeps the current reference: the update endpoint may only send
+        // the fields it wants to change.
+        if (typeCode != null) this.typeCode = typeCode
+        if (accessibilityCodes != null) this.accessibilityCodes = accessibilityCodes
     }
 
     companion object {
@@ -59,6 +78,8 @@ class Unit(
             bedrooms: Int,
             beds: Int,
             bathrooms: Int,
+            typeCode: UUID? = null,
+            accessibilityCodes: Set<UUID> = emptySet(),
         ): Unit {
             val unit = Unit(
                 id = id,
@@ -68,6 +89,8 @@ class Unit(
                 bedrooms = bedrooms,
                 beds = beds,
                 bathrooms = bathrooms,
+                typeCode = typeCode,
+                accessibilityCodes = accessibilityCodes,
             )
             unit.update(name, maxGuests, bedrooms, beds, bathrooms)
             if (unit.name.isBlank()) {

@@ -4,6 +4,7 @@ import com.coliving.api.messaging.application.dto.NotificationInboxView
 import com.coliving.api.messaging.application.dto.NotificationView
 import com.coliving.api.messaging.application.usecase.NotificationService
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import java.util.UUID
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -17,6 +18,10 @@ import org.springframework.web.bind.annotation.RestController
  * its unread counter and the acknowledgement of a single notification. Only the
  * owner can read or mark one, enforced by the domain.
  */
+@Tag(
+    name = "Notifications",
+    description = "In-app notification center of the authenticated user (RF-051): inbox with unread counter and acknowledgement.",
+)
 @RestController
 @RequestMapping("/api/v1/notifications")
 class NotificationController(

@@ -11,6 +11,7 @@ import com.coliving.api.messaging.application.usecase.MessageService
 import com.coliving.api.messaging.presentation.dto.OpenConversationRequest
 import com.coliving.api.messaging.presentation.dto.SendMessageRequest
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -29,6 +30,10 @@ import org.springframework.web.bind.annotation.RestController
  * application service, not by a role, since both the guest and the host use the
  * same thread.
  */
+@Tag(
+    name = "Conversations",
+    description = "Conversations and messages of a reservation (RF-050); available to any authenticated party of the thread.",
+)
 @RestController
 @RequestMapping("/api/v1/conversations")
 class ConversationController(
@@ -73,6 +78,10 @@ class ConversationController(
  * Convenience entry point for clients that only know the reservation: the
  * thread is opened on demand and the message lands in it.
  */
+@Tag(
+    name = "Conversations",
+    description = "Conversations and messages of a reservation (RF-050); available to any authenticated party of the thread.",
+)
 @RestController
 @RequestMapping("/api/v1/reservations")
 class ReservationMessageController(

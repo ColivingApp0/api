@@ -11,6 +11,7 @@ import com.coliving.api.reputation.application.usecase.ListEvaluationsService
 import com.coliving.api.reputation.presentation.dto.CreateEvaluationRequest
 import com.coliving.api.reputation.presentation.dto.DisputeEvaluationRequest
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -29,6 +30,10 @@ import org.springframework.web.bind.annotation.RestController
  * is decided by the application service from the relation read from booking, not
  * by a role.
  */
+@Tag(
+    name = "Reviews",
+    description = "Evaluations between the parties of an eligible stay (RF-070) and the dispute of an evaluation (RF-072).",
+)
 @RestController
 @RequestMapping("/api/v1/reviews")
 class ReviewController(
@@ -82,6 +87,10 @@ class ReviewController(
  * Consultable reputation of a user (RF-071): score, the factors that influence
  * it, the version of the formula and the benefits the score grants (RF-073).
  */
+@Tag(
+    name = "Reputation",
+    description = "Reputation score of a user (RF-071), public to authenticated users.",
+)
 @RestController
 @RequestMapping("/api/v1/users")
 class ReputationController(

@@ -9,6 +9,7 @@ import com.coliving.api.profile.application.usecase.UpdateProfileService
 import com.coliving.api.profile.presentation.dto.ConfigurePrivacyRequest
 import com.coliving.api.profile.presentation.dto.UpdateProfileRequest
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -22,6 +23,10 @@ import org.springframework.web.bind.annotation.RestController
  * Authenticated profile endpoints (RF-010, RF-011, RF-013, RF-014). The
  * principal always is the shared [CurrentUser]; the owner is the only subject.
  */
+@Tag(
+    name = "Profile",
+    description = "Profile and privacy of the authenticated user (RF-010, RF-011, RF-013, RF-014).",
+)
 @RestController
 @RequestMapping("/api/v1/profile")
 class ProfileController(

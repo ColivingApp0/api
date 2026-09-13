@@ -30,6 +30,8 @@ class UnitService(
             bedrooms = command.bedrooms,
             beds = command.beds,
             bathrooms = command.bathrooms,
+            typeCode = command.typeCode,
+            accessibilityCodes = command.accessibilityCodes,
         )
         unitRepository.save(unit)
         return unit.toView()
@@ -47,6 +49,8 @@ class UnitService(
             bedrooms = command.bedrooms,
             beds = command.beds,
             bathrooms = command.bathrooms,
+            typeCode = command.typeCode,
+            accessibilityCodes = command.accessibilityCodes,
         )
         unitRepository.save(unit)
         return unit.toView()
@@ -68,5 +72,7 @@ class UnitService(
             bedrooms = bedrooms,
             beds = beds,
             bathrooms = bathrooms,
+            typeCode = typeCode,
+            accessibilityCodes = accessibilityCodes,
         )
 }

@@ -12,6 +12,7 @@ import com.coliving.api.booking.application.usecase.RequestInfoReservationServic
 import com.coliving.api.booking.presentation.dto.CancelRequest
 import com.coliving.api.booking.presentation.dto.DecisionRequest
 import com.coliving.api.shared.security.CurrentUser
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.util.UUID
 import org.springframework.security.access.AccessDeniedException
@@ -28,6 +29,10 @@ import org.springframework.web.bind.annotation.RestController
  * the RF-041 contract: accept, reject or request information; cancellation is
  * shared with the guest (RF-044).
  */
+@Tag(
+    name = "Host Reservations",
+    description = "Incoming reservations of the ANFITRION: accept, reject or request information, plus the shared cancellation (RF-041, RF-044).",
+)
 @RestController
 @RequestMapping("/api/v1/host/reservations")
 class HostBookingController(

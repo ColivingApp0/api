@@ -12,6 +12,7 @@ import com.coliving.api.identity.domain.enums.DocumentStatus
 import com.coliving.api.shared.security.CurrentUser
 import com.coliving.api.identity.presentation.dto.AssignRoleRequest
 import com.coliving.api.identity.presentation.dto.ReviewDocumentRequest
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -29,6 +30,10 @@ import org.springframework.web.bind.annotation.RestController
  * Internal moderation/admin endpoints (RF-012, RF-014). Access is restricted to
  * MODERADOR / ADMINISTRADOR at the security layer.
  */
+@Tag(
+    name = "Admin Identity",
+    description = "Review of verification documents and role assignment (RF-012, RF-014); the admin namespace requires MODERADOR or ADMINISTRADOR.",
+)
 @RestController
 @RequestMapping("/api/v1/admin")
 class AdminIdentityController(
