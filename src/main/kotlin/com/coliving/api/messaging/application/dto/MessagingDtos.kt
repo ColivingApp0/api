@@ -81,3 +81,26 @@ data class NotificationInboxView(
     val notifications: List<NotificationView>,
 )
 
+/** A block raised by the authenticated user (RF-053). */
+data class BlockView(
+    val blockedUserId: UUID,
+    val createdAt: Instant,
+)
+
+/** Report of a conversation with its moderation case reference (RF-052). */
+data class ConversationReportView(
+    val id: UUID,
+    val conversationId: UUID,
+    val reportedUserId: UUID,
+    val reason: String,
+    val caseId: UUID,
+    val createdAt: Instant,
+)
+
+/** Command to report a conversation (RF-052). */
+data class ReportConversationCommand(
+    val conversationId: UUID,
+    val reporterUserId: UUID,
+    val reason: String,
+)
+

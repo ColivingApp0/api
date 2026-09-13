@@ -7,6 +7,7 @@ import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import java.time.Instant
 import java.util.UUID
 
@@ -74,4 +75,56 @@ class NotificationEntity(
 
     @Column(name = "read_at")
     var readAt: Instant?,
+)
+
+@Entity
+@Table(
+    name = "messaging_conversation_block",
+    uniqueConstraints = [
+        UniqueConstraint(name = "uk_messaging_block_pair", columnNames = ["blocker_user_id", "blocked_user_id"]),
+    ],
+)
+class ConversationBlockEntity(
+    @Id @Column(name = "id", nullable = false)
+    var id: UUID = UUID.randomUUID(),
+
+    @Column(name = "blocker_user_id", nullable = false)
+    var blockerUserId: UUID,
+
+    @Column(name = "blocked_user_id", nullable = false)
+    var blockedUserId: UUID,
+
+    @Column(name = "created_at", nullable = false)
+    var createdAt: Instant,
+)
+
+@Entity
+@Table(
+    name = "messaging_conversation_report",
+    uniqueConstraints = [
+        UniqueConstraint(name = "uk_messaging_report_pair", columnNames = ["conversation_id", "reporter_user_id"]),
+    ],
+)
+class ConversationReportEntity(
+    @Id @Column(name = "id", nullable = false)
+    var id: UUID = UUID.randomUUID(),
+
+    @Column(name = "conversation_id", nullable = false)
+    var conversationId: UUID,
+
+    @Column(name = "reporter_user_id", nullable = false)
+    var reporterUserId: UUID,
+
+    @Column(name = "reported_user_id", nullable = false)
+    var reportedUserId: UUID,
+
+    @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
+    var reason: String,
+
+    // Reference to the moderation case raised with the report (no FK).
+    @Column(name = "case_id", nullable = false)
+    var caseId: UUID,
+
+    @Column(name = "created_at", nullable = false)
+    var createdAt: Instant,
 )

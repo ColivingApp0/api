@@ -1,6 +1,8 @@
 package com.coliving.api.messaging.infrastructure.persistence.repository
 
+import com.coliving.api.messaging.infrastructure.persistence.entity.ConversationBlockEntity
 import com.coliving.api.messaging.infrastructure.persistence.entity.ConversationEntity
+import com.coliving.api.messaging.infrastructure.persistence.entity.ConversationReportEntity
 import com.coliving.api.messaging.infrastructure.persistence.entity.MessageEntity
 import com.coliving.api.messaging.infrastructure.persistence.entity.NotificationEntity
 import java.util.UUID
@@ -35,4 +37,23 @@ interface NotificationJpaRepository : JpaRepository<NotificationEntity, UUID> {
 
     /** Unread notifications of a user, newest first. */
     fun findByUserIdAndReadAtIsNullOrderByCreatedAtDesc(userId: UUID): List<NotificationEntity>
+}
+
+interface ConversationBlockJpaRepository : JpaRepository<ConversationBlockEntity, UUID> {
+
+    fun findByBlockerUserIdOrderByCreatedAtDesc(blockerUserId: UUID): List<ConversationBlockEntity>
+
+    fun findByBlockerUserIdAndBlockedUserId(blockerUserId: UUID, blockedUserId: UUID): ConversationBlockEntity?
+
+    fun existsByBlockerUserIdAndBlockedUserId(blockerUserId: UUID, blockedUserId: UUID): Boolean
+}
+
+interface ConversationReportJpaRepository : JpaRepository<ConversationReportEntity, UUID> {
+
+    fun findByReporterUserIdOrderByCreatedAtDesc(reporterUserId: UUID): List<ConversationReportEntity>
+
+    fun findByConversationIdAndReporterUserId(
+        conversationId: UUID,
+        reporterUserId: UUID,
+    ): ConversationReportEntity?
 }
