@@ -35,3 +35,14 @@ identity:
   bootstrap:
     # Dev-only first ADMINISTRADOR account; overridden in application-dev.yml.
     enabled: false
+
+reputation:
+  score:
+    # Documented formula of the score (RF-071): the weights are configuration
+    # (RF-071 "ponderaciones configurables") and must add up to 1. Bump the
+    # version whenever they change, so every stored score stays auditable.
+    formula-version: 1
+    rating-weight: 0.5
+    stays-weight: 0.2
+    verification-weight: 0.2
+    disputes-weight: 0.1

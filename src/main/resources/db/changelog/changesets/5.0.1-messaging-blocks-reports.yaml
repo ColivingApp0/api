@@ -1,0 +1,155 @@
+databaseChangeLog:
+  - changeSet:
+      id: 5.0.1-messaging-blocks-reports
+      author: coliving
+      remarks: Adds conversation blocking and reporting to the messaging context
+        (RF-052). A block stops new messages in the thread; a report references
+        the moderation case created for review (reference by UUID, no FK across
+        contexts). User references point to identity_user per the architecture
+        rule.
+      changes:
+        - createTable:
+            tableName: messaging_conversation_block
+            remarks: Block of a conversation raised by one of its parties; while active the thread admits no messages (RF-052).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_messaging_conversation_block
+              - column:
+                  name: conversation_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: blocker_user_id
+                  type: UUID
+                  remarks: Party that requested the block.
+                  constraints:
+                    nullable: false
+              - column:
+                  name: blocked_user_id
+                  type: UUID
+                  remarks: Counterpart the block applies to.
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deactivated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  remarks: Set when the block is lifted; the row is kept for traceability.
+        - addUniqueConstraint:
+            tableName: messaging_conversation_block
+            columnNames: conversation_id, blocker_user_id
+            constraintName: uq_messaging_block_conversation_blocker
+        - addForeignKeyConstraint:
+            baseTableName: messaging_conversation_block
+            baseColumnNames: conversation_id
+            referencedTableName: messaging_conversation
+            referencedColumnNames: id
+            constraintName: fk_messaging_block_conversation
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: messaging_conversation_block
+            baseColumnNames: blocker_user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_messaging_block_blocker
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: messaging_conversation_block
+            baseColumnNames: blocked_user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_messaging_block_blocked
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_messaging_block_conversation_active
+            tableName: messaging_conversation_block
+            columns:
+              - column:
+                  name: conversation_id
+              - column:
+                  name: active
+        - createTable:
+            tableName: messaging_conversation_report
+            remarks: Report of a conversation; it references the moderation case opened for review (RF-052).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_messaging_conversation_report
+              - column:
+                  name: conversation_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reporter_user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reported_user_id
+                  type: UUID
+                  remarks: Counterpart the report is about.
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: case_id
+                  type: UUID
+                  remarks: Reference to moderation_case (no FK).
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: messaging_conversation_report
+            baseColumnNames: conversation_id
+            referencedTableName: messaging_conversation
+            referencedColumnNames: id
+            constraintName: fk_messaging_report_conversation
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: messaging_conversation_report
+            baseColumnNames: reporter_user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_messaging_report_reporter
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: messaging_conversation_report
+            baseColumnNames: reported_user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_messaging_report_reported
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_messaging_report_conversation
+            tableName: messaging_conversation_report
+            columns:
+              - column:
+                  name: conversation_id

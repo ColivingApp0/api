@@ -10,6 +10,8 @@ import com.coliving.api.messaging.domain.model.Notification
 import com.coliving.api.messaging.domain.repository.ConversationRepository
 import com.coliving.api.messaging.domain.repository.MessageRepository
 import com.coliving.api.messaging.domain.repository.NotificationRepository
+import com.coliving.api.messaging.domain.repository.UserBlockRepository
+import com.coliving.api.shared.error.ForbiddenException
 import com.coliving.api.shared.error.NotFoundException
 import java.time.Instant
 import java.util.UUID
@@ -28,6 +30,7 @@ class MessageService(
     private val messageRepository: MessageRepository,
     private val notificationRepository: NotificationRepository,
     private val conversationService: ConversationService,
+    private val userBlockRepository: UserBlockRepository,
 ) {
 
     @Transactional
@@ -56,6 +59,11 @@ class MessageService(
 
     private fun persist(conversation: Conversation, senderUserId: UUID, body: String): MessageView {
         val now = Instant.now()
+        // RF-053: a block in either direction stops the conversation.
+        val recipientId = conversation.counterpartOf(senderUserId)
+        if (userBlockRepository.existsBetween(senderUserId, recipientId)) {
+            throw ForbiddenException("The conversation is blocked between these users")
+        }
         // The aggregate enforces participation and content limits; the service
         // only decides who is notified.
         val message = Message.send(
@@ -67,7 +75,6 @@ class MessageService(
         )
         messageRepository.save(message)
 
-        val recipientId = conversation.counterpartOf(senderUserId)
         notificationRepository.save(
             Notification.forNewMessage(
                 id = UUID.randomUUID(),

@@ -11,5 +11,12 @@ databaseChangeLog:
       file: db/changelog/changesets/4.0.0-search-schema.yaml
   - include:
       file: db/changelog/changesets/5.0.0-messaging-schema.yaml
+
+  - include:
+      file: db/changelog/changesets/5.0.1-messaging-blocks-reports.yaml
   - include:
       file: db/changelog/changesets/6.0.0-community-schema.yaml
+  - include:
+      file: db/changelog/changesets/7.0.0-moderation-schema.yaml
+  - include:
+      file: db/changelog/changesets/8.0.0-reputation-schema.yaml

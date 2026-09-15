@@ -1,8 +1,10 @@
 package com.coliving.api.messaging.domain.repository
 
 import com.coliving.api.messaging.domain.model.Conversation
+import com.coliving.api.messaging.domain.model.ConversationReport
 import com.coliving.api.messaging.domain.model.Message
 import com.coliving.api.messaging.domain.model.Notification
+import com.coliving.api.messaging.domain.model.UserBlock
 import java.util.UUID
 
 interface ConversationRepository {
@@ -40,4 +42,31 @@ interface NotificationRepository {
     fun findUnreadByUser(userId: UUID): List<Notification>
 
     fun save(notification: Notification)
+}
+
+/** Blocks raised by a user (RF-053). */
+interface UserBlockRepository {
+
+    /** Whether the block exists in either direction between the two users. */
+    fun existsBetween(userA: UUID, userB: UUID): Boolean
+
+    /** Blocks raised by [blockerUserId], newest first. */
+    fun findByBlocker(blockerUserId: UUID): List<UserBlock>
+
+    fun findByBlockerAndBlocked(blockerUserId: UUID, blockedUserId: UUID): UserBlock?
+
+    fun save(block: UserBlock)
+
+    fun delete(block: UserBlock)
+}
+
+/** Conversation reports (RF-052), with their moderation case reference. */
+interface ConversationReportRepository {
+
+    /** Reports raised by a user, newest first. */
+    fun findByReporter(reporterUserId: UUID): List<ConversationReport>
+
+    fun findByConversationAndReporter(conversationId: UUID, reporterUserId: UUID): ConversationReport?
+
+    fun save(report: ConversationReport)
 }
