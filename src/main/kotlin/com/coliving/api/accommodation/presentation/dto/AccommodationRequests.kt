@@ -105,3 +105,10 @@ data class ReviewPublicationRequest(
     @field:Size(max = 1000, message = "note must not exceed 1000 characters")
     val note: String? = null,
 )
+
+/** Reports a publication to moderation (RF-025); the reason is mandatory. */
+data class ReportPublicationRequest(
+    @field:NotBlank(message = "reason is required")
+    @field:Size(max = 1000, message = "reason must not exceed 1000 characters")
+    val reason: String,
+)
