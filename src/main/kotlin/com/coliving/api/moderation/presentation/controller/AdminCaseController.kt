@@ -4,12 +4,14 @@ import com.coliving.api.moderation.application.dto.AssignCaseCommand
 import com.coliving.api.moderation.application.dto.CaseDetailView
 import com.coliving.api.moderation.application.dto.CaseSearchQuery
 import com.coliving.api.moderation.application.dto.CaseView
+import com.coliving.api.moderation.application.dto.ModerationMetricsView
 import com.coliving.api.moderation.application.dto.RejectCaseCommand
 import com.coliving.api.moderation.application.dto.ResolveCaseCommand
 import com.coliving.api.moderation.application.dto.StartCaseReviewCommand
 import com.coliving.api.moderation.application.usecase.AssignCaseService
 import com.coliving.api.moderation.application.usecase.GetCaseService
 import com.coliving.api.moderation.application.usecase.ListCasesService
+import com.coliving.api.moderation.application.usecase.OperationsIndicatorsService
 import com.coliving.api.moderation.application.usecase.RejectCaseService
 import com.coliving.api.moderation.application.usecase.ResolveCaseService
 import com.coliving.api.moderation.application.usecase.StartCaseReviewService
@@ -44,7 +46,12 @@ class AdminCaseController(
     private val startCaseReviewService: StartCaseReviewService,
     private val resolveCaseService: ResolveCaseService,
     private val rejectCaseService: RejectCaseService,
+    private val operationsIndicatorsService: OperationsIndicatorsService,
 ) {
+
+    /** Operational indicators of the pilot's support queue (RF-084). */
+    @GetMapping("/metrics")
+    fun metrics(): ModerationMetricsView = operationsIndicatorsService.indicators()
 
     /** Queue with the filters the team needs; `onlyOpen` hides closed cases. */
     @GetMapping
