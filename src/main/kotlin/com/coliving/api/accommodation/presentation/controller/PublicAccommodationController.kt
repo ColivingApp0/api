@@ -4,6 +4,7 @@ import com.coliving.api.accommodation.application.dto.DayAvailabilityView
 import com.coliving.api.accommodation.application.dto.PublicationDetailView
 import com.coliving.api.accommodation.application.dto.PublicationView
 import com.coliving.api.accommodation.application.usecase.AvailabilityLockService
+import com.coliving.api.accommodation.application.usecase.PublicationService
 import com.coliving.api.accommodation.application.usecase.ReportPublicationService
 import com.coliving.api.accommodation.presentation.dto.ReportPublicationRequest
 import com.coliving.api.shared.security.CurrentUser
