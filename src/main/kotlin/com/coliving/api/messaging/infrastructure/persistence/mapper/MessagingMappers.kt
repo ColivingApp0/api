@@ -1,9 +1,13 @@
 package com.coliving.api.messaging.infrastructure.persistence.mapper
 
 import com.coliving.api.messaging.domain.model.Conversation
+import com.coliving.api.messaging.domain.model.ConversationReport
 import com.coliving.api.messaging.domain.model.Message
 import com.coliving.api.messaging.domain.model.Notification
+import com.coliving.api.messaging.domain.model.UserBlock
+import com.coliving.api.messaging.infrastructure.persistence.entity.ConversationBlockEntity
 import com.coliving.api.messaging.infrastructure.persistence.entity.ConversationEntity
+import com.coliving.api.messaging.infrastructure.persistence.entity.ConversationReportEntity
 import com.coliving.api.messaging.infrastructure.persistence.entity.MessageEntity
 import com.coliving.api.messaging.infrastructure.persistence.entity.NotificationEntity
 
@@ -71,4 +75,46 @@ object MessagingMappers {
             createdAt = notification.createdAt,
             readAt = notification.readAt,
         )
+
+    fun toDomain(entity: ConversationBlockEntity): UserBlock =
+        UserBlock(
+            blockerUserId = entity.blockerUserId,
+            blockedUserId = entity.blockedUserId,
+            createdAt = entity.createdAt,
+        )
+
+    fun toEntity(block: UserBlock): ConversationBlockEntity =
+        ConversationBlockEntity(
+            blockerUserId = block.blockerUserId,
+            blockedUserId = block.blockedUserId,
+            createdAt = block.createdAt,
+        )
+
+    fun toBlockList(entities: List<ConversationBlockEntity>): List<UserBlock> =
+        entities.map { toDomain(it) }
+
+    fun toDomain(entity: ConversationReportEntity): ConversationReport =
+        ConversationReport(
+            id = entity.id,
+            conversationId = entity.conversationId,
+            reporterUserId = entity.reporterUserId,
+            reportedUserId = entity.reportedUserId,
+            reason = entity.reason,
+            caseId = entity.caseId,
+            createdAt = entity.createdAt,
+        )
+
+    fun toEntity(report: ConversationReport): ConversationReportEntity =
+        ConversationReportEntity(
+            id = report.id,
+            conversationId = report.conversationId,
+            reporterUserId = report.reporterUserId,
+            reportedUserId = report.reportedUserId,
+            reason = report.reason,
+            caseId = report.caseId,
+            createdAt = report.createdAt,
+        )
+
+    fun toReportList(entities: List<ConversationReportEntity>): List<ConversationReport> =
+        entities.map { toDomain(it) }
 }

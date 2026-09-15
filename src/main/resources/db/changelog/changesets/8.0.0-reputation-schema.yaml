@@ -1,0 +1,173 @@
+databaseChangeLog:
+  - changeSet:
+      id: 8.0.0-reputation-schema
+      author: coliving
+      remarks: Creates the reputation bounded-context schema (evaluations, score
+        snapshots and configurable benefit rules). The evaluated relation is a
+        plain UUID (no FK); the dispute references the moderation case by UUID.
+        User references point to identity_user per the architecture rule.
+        Requirements RF-070, RF-071, RF-072 and RF-073.
+      changes:
+        - createTable:
+            tableName: reputation_evaluation
+            remarks: Evaluation between the two parties of an eligible relation (RF-070).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_reputation_evaluation
+              - column:
+                  name: author_user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject_user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: relation_type
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: relation_id
+                  type: UUID
+                  remarks: Reference to the evaluated event (booking_reservation), no FK.
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ratings
+                  type: TEXT
+                  remarks: Category ratings encoded as CATEGORY=value pairs.
+                  constraints:
+                    nullable: false
+              - column:
+                  name: overall_rating
+                  type: NUMERIC(3, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: comment
+                  type: TEXT
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: dispute_case_id
+                  type: UUID
+                  remarks: Moderation case opened by the dispute (RF-072), no FK.
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: reputation_evaluation
+            columnNames: author_user_id, relation_id
+            constraintName: uq_reputation_evaluation_author_relation
+        - addForeignKeyConstraint:
+            baseTableName: reputation_evaluation
+            baseColumnNames: author_user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_reputation_evaluation_author
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: reputation_evaluation
+            baseColumnNames: subject_user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_reputation_evaluation_subject
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_reputation_evaluation_subject_created
+            tableName: reputation_evaluation
+            columns:
+              - column:
+                  name: subject_user_id
+              - column:
+                  name: created_at
+        - createTable:
+            tableName: reputation_score_snapshot
+            remarks: Last computed score of a user with its factors and the version of the formula (RF-071).
+            columns:
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_reputation_score_snapshot
+              - column:
+                  name: score
+                  type: NUMERIC(4, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: formula_version
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: factors
+                  type: TEXT
+                  remarks: Factors encoded as name|weight|value|contribution rows.
+                  constraints:
+                    nullable: false
+              - column:
+                  name: computed_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: reputation_score_snapshot
+            baseColumnNames: user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_reputation_score_snapshot_user
+            onDelete: CASCADE
+        - createTable:
+            tableName: reputation_benefit_rule
+            remarks: Configurable rule that maps a minimum score to a benefit (RF-073).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_reputation_benefit_rule
+              - column:
+                  name: code
+                  type: VARCHAR(60)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(200)
+              - column:
+                  name: min_score
+                  type: NUMERIC(4, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: reputation_benefit_rule
+            columnNames: code
+            constraintName: uq_reputation_benefit_rule_code

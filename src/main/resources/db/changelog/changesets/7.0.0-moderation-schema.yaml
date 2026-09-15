@@ -1,0 +1,171 @@
+databaseChangeLog:
+  - changeSet:
+      id: 7.0.0-moderation-schema
+      author: coliving
+      remarks: Creates the moderation bounded-context schema (support cases and
+        their traceability). Cases are the single queue for reports (RF-052) and
+        disputes (RF-072), managed with states, priority and assignee (RF-082).
+        The reported object is referenced by a plain UUID (no FK); user
+        references point to identity_user per the architecture rule.
+      changes:
+        - createTable:
+            tableName: moderation_case
+            remarks: Support case raised by a report or a dispute (RF-082).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_moderation_case
+              - column:
+                  name: type
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject_type
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject_id
+                  type: UUID
+                  remarks: Reference to the reported object (conversation, evaluation, ...), no FK.
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reported_user_id
+                  type: UUID
+                  remarks: User the case is about, when known.
+              - column:
+                  name: opened_by_user_id
+                  type: UUID
+                  remarks: Reporter or disputant; null for system-raised cases.
+              - column:
+                  name: description
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: priority
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: assignee_user_id
+                  type: UUID
+                  remarks: Responsible moderator; null while unassigned.
+              - column:
+                  name: resolution
+                  type: TEXT
+                  remarks: Mandatory note of the decision that closed the case.
+              - column:
+                  name: opened_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: closed_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  remarks: Null while open; used to measure the response time (RF-082).
+        - addForeignKeyConstraint:
+            baseTableName: moderation_case
+            baseColumnNames: opened_by_user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_moderation_case_opened_by
+        - addForeignKeyConstraint:
+            baseTableName: moderation_case
+            baseColumnNames: reported_user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_moderation_case_reported_user
+        - addForeignKeyConstraint:
+            baseTableName: moderation_case
+            baseColumnNames: assignee_user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_moderation_case_assignee
+        - createIndex:
+            indexName: idx_moderation_case_status_opened
+            tableName: moderation_case
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: opened_at
+        - createIndex:
+            indexName: idx_moderation_case_subject
+            tableName: moderation_case
+            columns:
+              - column:
+                  name: subject_type
+              - column:
+                  name: subject_id
+        - createIndex:
+            indexName: idx_moderation_case_assignee
+            tableName: moderation_case
+            columns:
+              - column:
+                  name: assignee_user_id
+        - createTable:
+            tableName: moderation_case_event
+            remarks: Traceability chain of a case; every action records actor, note and instant (RF-082).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_moderation_case_event
+              - column:
+                  name: case_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: actor_user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: note
+                  type: TEXT
+              - column:
+                  name: occurred_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: moderation_case_event
+            baseColumnNames: case_id
+            referencedTableName: moderation_case
+            referencedColumnNames: id
+            constraintName: fk_moderation_case_event_case
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_moderation_case_event_case_occurred
+            tableName: moderation_case_event
+            columns:
+              - column:
+                  name: case_id
+              - column:
+                  name: occurred_at

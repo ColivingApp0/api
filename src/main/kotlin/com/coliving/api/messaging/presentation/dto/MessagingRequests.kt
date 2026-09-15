@@ -1,6 +1,7 @@
 package com.coliving.api.messaging.presentation.dto
 
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import java.util.UUID
 
@@ -15,4 +16,17 @@ data class SendMessageRequest(
     @field:NotBlank
     @field:Size(max = 2000)
     val body: String,
+)
+
+/** Reports a conversation to support (RF-052); the reason is mandatory. */
+data class ReportConversationRequest(
+    @field:NotBlank
+    @field:Size(max = 1000)
+    val reason: String,
+)
+
+/** Blocks a user (RF-053). */
+data class BlockUserRequest(
+    @field:NotNull
+    val blockedUserId: UUID,
 )

@@ -25,3 +25,18 @@ interface ReservationPartiesPort {
 
     fun findParties(reservationId: UUID): ReservationParties?
 }
+
+/**
+ * Case intake consumed from `moderation` (RF-052: reportar una conversación
+ * genera un caso de soporte). Implemented by an adapter delegating to
+ * moderation's CaseIntake; the returned id is stored with the report.
+ */
+interface ReportCasePort {
+
+    fun openConversationReportCase(
+        conversationId: UUID,
+        reportedUserId: UUID,
+        reporterUserId: UUID,
+        reason: String,
+    ): UUID
+}

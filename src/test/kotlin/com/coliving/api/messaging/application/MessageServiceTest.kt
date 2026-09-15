@@ -19,9 +19,10 @@ class MessageServiceTest {
     private val conversations = FakeConversationRepository()
     private val messages = FakeMessageRepository()
     private val notifications = FakeNotificationRepository()
+    private val blocks = FakeUserBlockRepository()
     private val parties = FakeReservationPartiesPort()
     private val conversationService = ConversationService(conversations, messages, parties)
-    private val service = MessageService(conversations, messages, notifications, conversationService)
+    private val service = MessageService(conversations, messages, notifications, conversationService, blocks)
 
     private val guestId = UUID.randomUUID()
     private val hostId = UUID.randomUUID()
