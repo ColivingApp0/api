@@ -109,6 +109,24 @@ class PublicationEntity(
 
     @Column(name = "updated_at", nullable = false)
     var updatedAt: java.time.Instant,
+
+    // Moderation review metadata (RF-022 "enviar a revisión", RF-081).
+    @Column(name = "review_requested_at")
+    var reviewRequestedAt: java.time.Instant?,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "review_decision", length = 40)
+    var reviewDecision: com.coliving.api.accommodation.domain.enums.ReviewDecision?,
+
+    @Column(name = "review_moderator_id")
+    var reviewModeratorId: UUID?,
+
+    @Column(name = "review_note", columnDefinition = "TEXT")
+    var reviewNote: String?,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "review_source_status", length = 50)
+    var reviewSourceStatus: PublicationStatus?,
 )
 
 @Entity

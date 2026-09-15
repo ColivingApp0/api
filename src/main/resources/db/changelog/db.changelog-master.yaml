@@ -20,3 +20,5 @@ databaseChangeLog:
       file: db/changelog/changesets/7.0.0-moderation-schema.yaml
   - include:
       file: db/changelog/changesets/8.0.0-reputation-schema.yaml
+  - include:
+      file: db/changelog/changesets/9.0.0-publication-review.yaml

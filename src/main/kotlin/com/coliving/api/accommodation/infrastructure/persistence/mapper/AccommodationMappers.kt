@@ -116,12 +116,22 @@ object AccommodationMappers {
             status = domain.status,
             createdAt = domain.createdAt,
             updatedAt = domain.updatedAt,
+            reviewRequestedAt = domain.reviewRequestedAt,
+            reviewDecision = domain.reviewDecision,
+            reviewModeratorId = domain.reviewModeratorId,
+            reviewNote = domain.reviewNote,
+            reviewSourceStatus = domain.reviewSourceStatus,
         )
 
     fun copyInto(entity: PublicationEntity, domain: Publication): PublicationEntity {
         entity.title = domain.title
         entity.status = domain.status
         entity.updatedAt = domain.updatedAt
+        entity.reviewRequestedAt = domain.reviewRequestedAt
+        entity.reviewDecision = domain.reviewDecision
+        entity.reviewModeratorId = domain.reviewModeratorId
+        entity.reviewNote = domain.reviewNote
+        entity.reviewSourceStatus = domain.reviewSourceStatus
         return entity
     }
 
@@ -132,6 +142,11 @@ object AccommodationMappers {
             title = entity.title,
             status = entity.status,
             createdAt = entity.createdAt,
+            reviewRequestedAt = entity.reviewRequestedAt,
+            reviewDecision = entity.reviewDecision,
+            reviewModeratorId = entity.reviewModeratorId,
+            reviewNote = entity.reviewNote,
+            reviewSourceStatus = entity.reviewSourceStatus,
         )
 
     // ---------- Pricing ----------
