@@ -2,10 +2,12 @@ package com.coliving.api.accommodation.presentation.dto
 
 import com.coliving.api.accommodation.domain.enums.CancellationPolicy
 import com.coliving.api.accommodation.domain.enums.Currency
+import com.coliving.api.accommodation.domain.enums.ReviewDecision
 import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
 import java.math.BigDecimal
 import java.time.LocalTime
 import java.util.UUID
@@ -93,4 +95,13 @@ data class ConfigureRulesRequest(
     val maxNights: Int = 365,
 
     val houseRules: List<String> = emptyList(),
+)
+
+/** Moderation decision over a publication under review (RF-081). */
+data class ReviewPublicationRequest(
+    @field:NotNull(message = "decision is required")
+    val decision: ReviewDecision? = null,
+
+    @field:Size(max = 1000, message = "note must not exceed 1000 characters")
+    val note: String? = null,
 )

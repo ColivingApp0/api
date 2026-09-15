@@ -185,6 +185,12 @@ class HostAccommodationController(
         @PathVariable id: UUID,
     ): PublicationView = requireHost(current) { publicationService.hide(id, current.userId) }
 
+    @PostMapping("/publications/{id}/request-review")
+    fun requestReview(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+    ): PublicationView = requireHost(current) { publicationService.requestReview(id, current.userId) }
+
     @PostMapping("/publications/{id}/archive")
     fun archive(
         @AuthenticationPrincipal current: CurrentUser,
