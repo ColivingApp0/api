@@ -1,0 +1,50 @@
+# Local development database for the coliving API.
+#
+# These credentials/database match the defaults in
+# src/main/resources/application-dev.yml (jdbc:postgresql://localhost:5432/coliving,
+# postgres/postgres), so `docker compose up -d` followed by `./gradlew bootRun`
+# is enough to start the application with no environment variables set.
+#
+# The image is the same one the integration tests use via Testcontainers, so
+# Liquibase migrations and JPA `validate` run against the same PostgreSQL
+# version locally as they do in tests.
+#
+# Usage:
+#   cd api
+#   docker compose up -d      # start (reuses the data volume, keeps the schema)
+#   docker compose logs -f    # follow the server log
+#   docker compose down       # stop, keeping data
+#
+# To wipe the schema and let Liquibase migrate from scratch:
+#   docker compose down && docker volume rm coliving-postgres-data
+#
+# `restart: unless-stopped` matters: without it the container stays down after
+# a machine reboot while the API keeps coming up, so Spring fails to start with
+# "Connection to localhost:5432 refused" while building the Liquibase bean.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: coliving-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: coliving
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - coliving-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d coliving"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+# Declared `external` because it holds the local dev database (schema already
+# migrated by Liquibase) and outlives this Compose project. `external` keeps the
+# explicit name instead of the `api_`-prefixed default, and stops Compose from
+# recreating it or deleting it as part of `down`.
+volumes:
+  coliving-postgres-data:
+    name: coliving-postgres-data
+    external: true
