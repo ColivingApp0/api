@@ -1,0 +1,19 @@
+spring:
+  jpa:
+    show-sql: false
+  liquibase:
+    enabled: true
+
+app:
+  mail:
+    provider: log
+  push:
+    enabled: false
+  firebase:
+    enabled: false
+  seed:
+    enabled: false
+
+identity:
+  bootstrap:
+    enabled: false
