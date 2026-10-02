@@ -39,3 +39,8 @@ out/
 ### Kotlin ###
 .kotlin
 .env
+.env.properties
+secrets/
+
+### Local uploaded documents (identity verification) ###
+storage/
