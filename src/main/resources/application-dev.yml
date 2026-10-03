@@ -11,7 +11,13 @@ logging:
     liquibase: INFO
     com.coliving.api.identity.infrastructure.mail: INFO
 server:
-  port: 8080
+  port: 8082
+
+# Reproducible development data (DevSeedData): 4 hosts, 16 guests,
+# 8 properties and 17 rooms with accepted/pending/rejected requests.
+app:
+  seed:
+    enabled: ${SEED_ENABLED:true}
 
 # Dev-only bootstrap admin. Override secrets via environment.
 identity:
