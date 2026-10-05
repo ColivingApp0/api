@@ -1,0 +1,61 @@
+databaseChangeLog:
+  - changeSet:
+      id: 10.0.0-messaging-push-tokens
+      author: coliving
+      remarks: FCM registration tokens per user for the external push channel
+        (RF-051). A token is unique because it identifies one installation; the
+        user reference points to identity_user per the architecture rule.
+      changes:
+        - createTable:
+            tableName: messaging_push_token
+            remarks: FCM device token registered by a user (RF-051).
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_messaging_push_token
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token
+                  type: VARCHAR(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: platform
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_seen_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: messaging_push_token
+            columnNames: token
+            constraintName: uk_messaging_push_token_token
+        - addForeignKeyConstraint:
+            baseTableName: messaging_push_token
+            baseColumnNames: user_id
+            referencedTableName: identity_user
+            referencedColumnNames: id
+            constraintName: fk_messaging_push_token_user
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_messaging_push_token_user
+            tableName: messaging_push_token
+            columns:
+              - column:
+                  name: user_id
