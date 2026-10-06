@@ -1,23 +1,25 @@
 package com.coliving.api.accommodation.presentation.dto
 
-import com.coliving.api.accommodation.domain.enums.CancellationPolicy
+import com.coliving.api.accommodation.domain.enums.BathroomType
 import com.coliving.api.accommodation.domain.enums.Currency
+import com.coliving.api.accommodation.domain.enums.PriceUnit
 import com.coliving.api.accommodation.domain.enums.ReviewDecision
+import com.coliving.api.accommodation.domain.enums.RoomType
 import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import java.math.BigDecimal
-import java.time.LocalTime
 import java.util.UUID
 
 data class CreatePropertyRequest(
-    @field:NotBlank(message = "title is required")
+    @field:NotBlank(message = "El nombre es obligatorio")
     val title: String = "",
-
     val description: String? = null,
     val cityId: UUID? = null,
+    val cityName: String? = null,
+    val neighborhood: String? = null,
     val address: String? = null,
     val amenities: List<String> = emptyList(),
 )
@@ -26,110 +28,101 @@ data class UpdatePropertyRequest(
     val title: String? = null,
     val description: String? = null,
     val cityId: UUID? = null,
+    val cityName: String? = null,
+    val neighborhood: String? = null,
     val address: String? = null,
     val amenities: List<String>? = null,
 )
 
 data class CreateUnitRequest(
-    @field:NotBlank(message = "name is required")
+    @field:NotBlank(message = "El nombre es obligatorio")
     val name: String = "",
-
-    @field:Min(1, message = "maxGuests must be at least 1")
+    val description: String? = null,
+    @field:Min(1, message = "La capacidad debe ser al menos 1")
     val maxGuests: Int = 1,
-
-    @field:Min(0, message = "bedrooms must not be negative")
-    val bedrooms: Int = 0,
-
-    @field:Min(0, message = "beds must not be negative")
-    val beds: Int = 1,
-
-    @field:Min(0, message = "bathrooms must not be negative")
-    val bathrooms: Int = 1,
-
-    // Catalog references (RF-031, RF-083); optional.
+    @field:DecimalMin(value = "0.01", message = "El precio mensual debe ser positivo")
+    val monthlyPrice: BigDecimal? = null,
+    val currency: Currency = Currency.COP,
+    val priceUnit: PriceUnit = PriceUnit.POR_HABITACION,
+    val roomType: RoomType = RoomType.INDIVIDUAL,
+    val bathroomType: BathroomType = BathroomType.COMPARTIDO,
+    val airConditioning: Boolean = false,
+    val fan: Boolean = false,
+    val commonAreas: List<String> = emptyList(),
     val typeCode: UUID? = null,
     val accessibilityCodes: List<UUID> = emptyList(),
+    val sortOrder: Int = 0,
 )
 
 data class UpdateUnitRequest(
-    @field:NotBlank(message = "name is required")
+    @field:NotBlank(message = "El nombre es obligatorio")
     val name: String = "",
-
-    @field:Min(1, message = "maxGuests must be at least 1")
+    val description: String? = null,
+    @field:Min(1, message = "La capacidad debe ser al menos 1")
     val maxGuests: Int = 1,
-
-    @field:Min(0, message = "bedrooms must not be negative")
-    val bedrooms: Int = 0,
-
-    @field:Min(0, message = "beds must not be negative")
-    val beds: Int = 1,
-
-    @field:Min(0, message = "bathrooms must not be negative")
-    val bathrooms: Int = 1,
-
-    // Catalog references (RF-031, RF-083); null keeps the current values.
+    @field:DecimalMin(value = "0.01", message = "El precio mensual debe ser positivo")
+    val monthlyPrice: BigDecimal? = null,
+    val currency: Currency = Currency.COP,
+    val priceUnit: PriceUnit = PriceUnit.POR_HABITACION,
+    val roomType: RoomType = RoomType.INDIVIDUAL,
+    val bathroomType: BathroomType = BathroomType.COMPARTIDO,
+    val airConditioning: Boolean = false,
+    val fan: Boolean = false,
+    val commonAreas: List<String> = emptyList(),
     val typeCode: UUID? = null,
     val accessibilityCodes: List<UUID>? = null,
+    val sortOrder: Int? = null,
+)
+
+data class SetAvailabilityRequest(
+    @field:NotNull(message = "enabled es obligatorio")
+    val enabled: Boolean? = null,
+)
+
+data class AddPhotoRequest(
+    @field:NotBlank(message = "La URL de la fotografía es obligatoria")
+    @field:Size(max = 1000, message = "La URL no puede superar 1000 caracteres")
+    val url: String,
+    val position: Int? = null,
+)
+
+data class ReorderPhotosRequest(
+    @field:NotNull(message = "photoIds es obligatorio")
+    val photoIds: List<UUID> = emptyList(),
 )
 
 data class CreatePublicationRequest(
-    @field:NotBlank(message = "title is required")
+    @field:NotBlank(message = "El título es obligatorio")
     val title: String = "",
-
-    // Searchable catalog references (RF-031); optional.
     val services: List<UUID> = emptyList(),
     val applicableRuleCodes: List<UUID> = emptyList(),
 )
 
-/** RF-031: updates the searchable catalog references of a listing. */
 data class ConfigureCatalogReferencesRequest(
-    @field:NotNull(message = "services is required")
+    @field:NotNull(message = "services es obligatorio")
     val services: List<UUID>? = null,
-
-    @field:NotNull(message = "applicableRuleCodes is required")
+    @field:NotNull(message = "applicableRuleCodes es obligatorio")
     val applicableRuleCodes: List<UUID>? = null,
 )
 
 data class ConfigurePricingRequest(
-    @field:NotNull(message = "basePricePerNight is required")
-    @field:DecimalMin(value = "0.01", message = "basePricePerNight must be positive")
-    val basePricePerNight: BigDecimal? = null,
-
-    @field:NotNull(message = "currency is required")
+    @field:NotNull(message = "monthlyPrice es obligatorio")
+    @field:DecimalMin(value = "0.01", message = "El precio mensual debe ser positivo")
+    val monthlyPrice: BigDecimal? = null,
+    @field:NotNull(message = "currency es obligatorio")
     val currency: Currency? = null,
+    val priceUnit: PriceUnit = PriceUnit.POR_HABITACION,
 )
 
-data class ConfigureRulesRequest(
-    @field:NotNull(message = "cancellationPolicy is required")
-    val cancellationPolicy: CancellationPolicy? = null,
-
-    @field:NotNull(message = "checkInTime is required")
-    val checkInTime: LocalTime? = null,
-
-    @field:NotNull(message = "checkOutTime is required")
-    val checkOutTime: LocalTime? = null,
-
-    @field:Min(1, message = "minNights must be at least 1")
-    val minNights: Int = 1,
-
-    @field:Min(1, message = "maxNights must be at least 1")
-    val maxNights: Int = 365,
-
-    val houseRules: List<String> = emptyList(),
-)
-
-/** Moderation decision over a publication under review (RF-081). */
 data class ReviewPublicationRequest(
-    @field:NotNull(message = "decision is required")
+    @field:NotNull(message = "decision es obligatorio")
     val decision: ReviewDecision? = null,
-
-    @field:Size(max = 1000, message = "note must not exceed 1000 characters")
+    @field:Size(max = 1000, message = "La nota no puede superar 1000 caracteres")
     val note: String? = null,
 )
 
-/** Reports a publication to moderation (RF-025); the reason is mandatory. */
 data class ReportPublicationRequest(
-    @field:NotBlank(message = "reason is required")
-    @field:Size(max = 1000, message = "reason must not exceed 1000 characters")
+    @field:NotBlank(message = "El motivo es obligatorio")
+    @field:Size(max = 1000, message = "El motivo no puede superar 1000 caracteres")
     val reason: String,
 )

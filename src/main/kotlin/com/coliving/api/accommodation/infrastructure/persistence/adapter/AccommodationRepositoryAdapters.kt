@@ -1,27 +1,27 @@
 package com.coliving.api.accommodation.infrastructure.persistence.adapter
 
 import com.coliving.api.accommodation.domain.enums.PublicationStatus
-import com.coliving.api.accommodation.domain.model.Pricing
 import com.coliving.api.accommodation.domain.model.Property
+import com.coliving.api.accommodation.domain.model.PropertyPhoto
 import com.coliving.api.accommodation.domain.model.Publication
-import com.coliving.api.accommodation.domain.model.Rule
 import com.coliving.api.accommodation.domain.model.Unit
-import com.coliving.api.accommodation.domain.repository.PricingRepository
+import com.coliving.api.accommodation.domain.model.UnitPhoto
+import com.coliving.api.accommodation.domain.repository.PropertyPhotoRepository
 import com.coliving.api.accommodation.domain.repository.PropertyRepository
 import com.coliving.api.accommodation.domain.repository.PublicationRepository
-import com.coliving.api.accommodation.domain.repository.RuleRepository
+import com.coliving.api.accommodation.domain.repository.UnitPhotoRepository
 import com.coliving.api.accommodation.domain.repository.UnitRepository
 import com.coliving.api.accommodation.infrastructure.persistence.mapper.AccommodationMappers.copyInto
+import com.coliving.api.accommodation.infrastructure.persistence.mapper.AccommodationMappers.toDomainPhoto
 import com.coliving.api.accommodation.infrastructure.persistence.mapper.AccommodationMappers.toDomainProperty
 import com.coliving.api.accommodation.infrastructure.persistence.mapper.AccommodationMappers.toDomainPublication
-import com.coliving.api.accommodation.infrastructure.persistence.mapper.AccommodationMappers.toDomainRule
 import com.coliving.api.accommodation.infrastructure.persistence.mapper.AccommodationMappers.toDomainUnit
 import com.coliving.api.accommodation.infrastructure.persistence.mapper.AccommodationMappers.toEntity
 import com.coliving.api.accommodation.infrastructure.persistence.repository.PropertyJpaRepository
+import com.coliving.api.accommodation.infrastructure.persistence.repository.PropertyPhotoJpaRepository
 import com.coliving.api.accommodation.infrastructure.persistence.repository.PublicationJpaRepository
-import com.coliving.api.accommodation.infrastructure.persistence.repository.PricingJpaRepository
-import com.coliving.api.accommodation.infrastructure.persistence.repository.RuleJpaRepository
 import com.coliving.api.accommodation.infrastructure.persistence.repository.UnitJpaRepository
+import com.coliving.api.accommodation.infrastructure.persistence.repository.UnitPhotoJpaRepository
 import java.util.UUID
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
@@ -59,9 +59,13 @@ class UnitRepositoryAdapter(
     override fun findById(id: UUID): Unit? =
         jpa.findById(id).orElse(null)?.let(::toDomainUnit)
 
+    @Transactional
+    override fun findByIdForUpdate(id: UUID): Unit? =
+        jpa.findByIdForUpdate(id)?.let(::toDomainUnit)
+
     @Transactional(readOnly = true)
     override fun findByProperty(propertyId: UUID): List<Unit> =
-        jpa.findByPropertyId(propertyId).map(::toDomainUnit)
+        jpa.findByPropertyIdOrderBySortOrderAscCreatedAtAsc(propertyId).map(::toDomainUnit)
 
     @Transactional
     override fun save(unit: Unit) {
@@ -107,48 +111,59 @@ class PublicationRepositoryAdapter(
 }
 
 @Repository
-class PricingRepositoryAdapter(
-    private val jpa: PricingJpaRepository,
-) : PricingRepository {
+class PropertyPhotoRepositoryAdapter(
+    private val jpa: PropertyPhotoJpaRepository,
+) : PropertyPhotoRepository {
 
     @Transactional(readOnly = true)
-    override fun findByPublication(publicationId: UUID): Pricing? =
-        jpa.findByPublicationId(publicationId)?.let { m ->
-            Pricing(
-                id = m.id,
-                publicationId = m.publicationId,
-                basePricePerNight = m.basePricePerNight,
-                currency = m.currency,
-            )
-        }
+    override fun findByProperty(propertyId: UUID): List<PropertyPhoto> =
+        jpa.findByPropertyIdOrderByPositionAscCreatedAtAsc(propertyId).map(::toDomainPhoto)
+
+    @Transactional(readOnly = true)
+    override fun findById(id: UUID): PropertyPhoto? =
+        jpa.findById(id).orElse(null)?.let(::toDomainPhoto)
 
     @Transactional
-    override fun save(pricing: Pricing) {
-        val existing = jpa.findById(pricing.id).orElse(null)
+    override fun save(photo: PropertyPhoto) {
+        val existing = jpa.findById(photo.id).orElse(null)
         if (existing != null) {
-            copyInto(existing, pricing)
+            copyInto(existing, photo)
         } else {
-            jpa.save(toEntity(pricing))
+            jpa.save(toEntity(photo))
         }
+    }
+
+    @Transactional
+    override fun delete(photo: PropertyPhoto) {
+        jpa.deleteById(photo.id)
     }
 }
 
 @Repository
-class RuleRepositoryAdapter(
-    private val jpa: RuleJpaRepository,
-) : RuleRepository {
+class UnitPhotoRepositoryAdapter(
+    private val jpa: UnitPhotoJpaRepository,
+) : UnitPhotoRepository {
 
     @Transactional(readOnly = true)
-    override fun findByPublication(publicationId: UUID): Rule? =
-        jpa.findByPublicationId(publicationId)?.let(::toDomainRule)
+    override fun findByUnit(unitId: UUID): List<UnitPhoto> =
+        jpa.findByUnitIdOrderByPositionAscCreatedAtAsc(unitId).map(::toDomainPhoto)
+
+    @Transactional(readOnly = true)
+    override fun findById(id: UUID): UnitPhoto? =
+        jpa.findById(id).orElse(null)?.let(::toDomainPhoto)
 
     @Transactional
-    override fun save(rule: Rule) {
-        val existing = jpa.findById(rule.id).orElse(null)
+    override fun save(photo: UnitPhoto) {
+        val existing = jpa.findById(photo.id).orElse(null)
         if (existing != null) {
-            copyInto(existing, rule)
+            copyInto(existing, photo)
         } else {
-            jpa.save(toEntity(rule))
+            jpa.save(toEntity(photo))
         }
+    }
+
+    @Transactional
+    override fun delete(photo: UnitPhoto) {
+        jpa.deleteById(photo.id)
     }
 }

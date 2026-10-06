@@ -1,12 +1,10 @@
 package com.coliving.api.accommodation.domain.repository
 
-import com.coliving.api.accommodation.domain.model.AvailabilitySlot
-import com.coliving.api.accommodation.domain.model.Pricing
 import com.coliving.api.accommodation.domain.model.Property
+import com.coliving.api.accommodation.domain.model.PropertyPhoto
 import com.coliving.api.accommodation.domain.model.Publication
-import com.coliving.api.accommodation.domain.model.Rule
 import com.coliving.api.accommodation.domain.model.Unit
-import java.time.LocalDate
+import com.coliving.api.accommodation.domain.model.UnitPhoto
 import java.util.UUID
 
 interface PropertyRepository {
@@ -17,6 +15,9 @@ interface PropertyRepository {
 
 interface UnitRepository {
     fun findById(id: UUID): Unit?
+
+    /** Row lock used by capacity/occupancy mutations (accept request). */
+    fun findByIdForUpdate(id: UUID): Unit?
     fun findByProperty(propertyId: UUID): List<Unit>
     fun save(unit: Unit)
 }
@@ -29,34 +30,16 @@ interface PublicationRepository {
     fun save(publication: Publication)
 }
 
-interface PricingRepository {
-    fun findByPublication(publicationId: UUID): Pricing?
-    fun save(pricing: Pricing)
+interface PropertyPhotoRepository {
+    fun findByProperty(propertyId: UUID): List<PropertyPhoto>
+    fun findById(id: UUID): PropertyPhoto?
+    fun save(photo: PropertyPhoto)
+    fun delete(photo: PropertyPhoto)
 }
 
-interface RuleRepository {
-    fun findByPublication(publicationId: UUID): Rule?
-    fun save(rule: Rule)
-}
-
-/**
- * Availability persistence port. Implementations must promise the locking
- * discipline (single transaction + SELECT ... FOR UPDATE in ascending date
- * order) so concurrent reservations cannot double-book.
- */
-interface AvailabilitySlotRepository {
-
-    /** Returns the existing rows for the range, or creates+returns implicit free rows. */
-    fun findOrCreateRange(unitId: UUID, from: LocalDate, to: LocalDate): List<AvailabilitySlot>
-
-    /** Returns the rows for a range that belong to the given reservation/host block. */
-    fun findRange(unitId: UUID, from: LocalDate, to: LocalDate): List<AvailabilitySlot>
-
-    /** Reads all days in the range (including implicit free days) for read-only queries. */
-    fun findRangeReadOnly(unitId: UUID, from: LocalDate, to: LocalDate): Map<LocalDate, AvailabilitySlot>
-
-    fun isRangeAvailable(unitId: UUID, from: LocalDate, to: LocalDate): Boolean
-
-    fun saveAll(slots: List<AvailabilitySlot>)
-    fun deleteRange(unitId: UUID, from: LocalDate, to: LocalDate)
+interface UnitPhotoRepository {
+    fun findByUnit(unitId: UUID): List<UnitPhoto>
+    fun findById(id: UUID): UnitPhoto?
+    fun save(photo: UnitPhoto)
+    fun delete(photo: UnitPhoto)
 }

@@ -1,53 +1,47 @@
 package com.coliving.api.accommodation.application.usecase
 
-import com.coliving.api.accommodation.application.dto.ConfigurePricingCommand
-import com.coliving.api.accommodation.application.dto.ConfigureRulesCommand
 import com.coliving.api.accommodation.application.dto.ConfigureCatalogReferencesCommand
+import com.coliving.api.accommodation.application.dto.ConfigurePricingCommand
 import com.coliving.api.accommodation.application.dto.CreatePublicationCommand
 import com.coliving.api.accommodation.application.dto.PricingView
-import com.coliving.api.accommodation.application.dto.PropertyView
 import com.coliving.api.accommodation.application.dto.PublicationDetailView
 import com.coliving.api.accommodation.application.dto.PublicationView
-import com.coliving.api.accommodation.application.dto.RulesView
-import com.coliving.api.accommodation.application.dto.UnitView
+import com.coliving.api.accommodation.application.dto.RoommateView
 import com.coliving.api.accommodation.application.port.out.HostVerificationPort
 import com.coliving.api.accommodation.domain.enums.PublicationStatus
 import com.coliving.api.accommodation.domain.enums.ReviewDecision
-import com.coliving.api.accommodation.domain.model.Pricing
 import com.coliving.api.accommodation.domain.model.Property
 import com.coliving.api.accommodation.domain.model.Publication
-import com.coliving.api.accommodation.domain.model.Rule
-import com.coliving.api.accommodation.domain.model.Unit
-import com.coliving.api.accommodation.domain.repository.PricingRepository
 import com.coliving.api.accommodation.domain.repository.PropertyRepository
 import com.coliving.api.accommodation.domain.repository.PublicationRepository
-import com.coliving.api.accommodation.domain.repository.RuleRepository
 import com.coliving.api.accommodation.domain.repository.UnitRepository
 import com.coliving.api.shared.error.ConflictException
-import java.time.Instant
 import com.coliving.api.shared.error.ForbiddenException
 import com.coliving.api.shared.error.NotFoundException
+import java.time.Instant
 import java.util.UUID
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class PublicationService(
     private val publicationRepository: PublicationRepository,
     private val unitRepository: UnitRepository,
     private val propertyRepository: PropertyRepository,
-    private val pricingRepository: PricingRepository,
-    private val ruleRepository: RuleRepository,
     private val hostVerificationPort: HostVerificationPort,
+    private val assembler: AccommodationViewAssembler,
 ) {
 
+    @Transactional
     fun createPublication(command: CreatePublicationCommand): PublicationView {
         val unit = unitRepository.findById(command.unitId)
-            ?: throw NotFoundException("Unit not found")
+            ?: throw NotFoundException("Habitación no encontrada")
         val property = propertyRepository.findById(unit.propertyId)
-            ?: throw NotFoundException("Property not found")
+            ?: throw NotFoundException("Propiedad no encontrada")
         checkOwner(property, command.hostId)
-        val existing = publicationRepository.findByUnit(command.unitId)
-        if (existing != null) throw ConflictException("Unit already has a publication")
+        if (publicationRepository.findByUnit(command.unitId) != null) {
+            throw ConflictException("La habitación ya tiene una publicación")
+        }
         val publication = Publication.create(
             id = UUID.randomUUID(),
             unitId = command.unitId,
@@ -56,37 +50,38 @@ class PublicationService(
         )
         publication.configureCatalogReferences(command.services, command.applicableRuleCodes, Instant.now())
         publicationRepository.save(publication)
-        return publication.toView()
+        return assembler.publicationView(publication)
     }
 
-    /** Publish gate (RF hosting): host must be identity-verified (COMPLETO). */
+    /** Publish gate: verified host and an explicit monthly price. */
+    @Transactional
     fun publish(publicationId: UUID, hostId: UUID): PublicationView {
         val publication = requireOwned(publicationId, hostId)
+        val unit = unitRepository.findById(publication.unitId)
+            ?: throw NotFoundException("Habitación no encontrada")
+        if (unit.monthlyPrice == null) {
+            throw ConflictException("Define el precio mensual antes de publicar la habitación")
+        }
         if (!hostVerificationPort.isVerifiedHost(hostId)) {
-            throw ConflictException("Host identity is not verified; cannot publish")
+            throw ConflictException("Verifica tu identidad para publicar habitaciones")
         }
         publication.publish()
+        publication.touch(Instant.now())
         publicationRepository.save(publication)
-        return publication.toView()
+        return assembler.publicationView(publication)
     }
 
-    /**
-     * RF-022 "enviar a revisión" (from BORRADOR) and RF-081 post-publication
-     * review (from PUBLICADA/PAUSADA): the listing goes to EN_REVISION and the
-     * moderation team decides (see [resolveReview]).
-     */
+    @Transactional
     fun requestReview(publicationId: UUID, hostId: UUID): PublicationView =
         transition(publicationId, hostId) { it.requestReview(Instant.now()) }
 
-    /** Moderation queue (RF-081): publications currently under review. */
     fun findForReview(): List<PublicationView> =
-        publicationRepository.findByStatus(PublicationStatus.EN_REVISION).map { it.toView() }
+        publicationRepository.findByStatus(PublicationStatus.EN_REVISION).map(assembler::publicationView)
 
-    /** Admin listing of publications by status (moderation queue filters). */
     fun findByStatusForAdmin(status: PublicationStatus): List<PublicationView> =
-        publicationRepository.findByStatus(status).map { it.toView() }
+        publicationRepository.findByStatus(status).map(assembler::publicationView)
 
-    /** Records the moderation decision of a review (RF-081). */
+    @Transactional
     fun resolveReview(
         publicationId: UUID,
         moderatorId: UUID,
@@ -94,94 +89,85 @@ class PublicationService(
         note: String?,
     ): PublicationView {
         val publication = publicationRepository.findById(publicationId)
-            ?: throw NotFoundException("Publication not found")
+            ?: throw NotFoundException("Publicación no encontrada")
         publication.resolveReview(decision, moderatorId, note, Instant.now())
         publicationRepository.save(publication)
-        return publication.toView()
+        return assembler.publicationView(publication)
     }
 
     /** RF-031: updates the searchable catalog references of the listing. */
+    @Transactional
     fun configureCatalogReferences(command: ConfigureCatalogReferencesCommand): PublicationView {
         val publication = requireOwned(command.publicationId, command.hostId)
-        publication.configureCatalogReferences(
-            command.services,
-            command.applicableRuleCodes,
-            Instant.now(),
-        )
+        publication.configureCatalogReferences(command.services, command.applicableRuleCodes, Instant.now())
         publicationRepository.save(publication)
-        return publication.toView()
+        return assembler.publicationView(publication)
     }
 
+    @Transactional
     fun pause(publicationId: UUID, hostId: UUID): PublicationView =
         transition(publicationId, hostId) { it.pause() }
 
+    @Transactional
     fun hide(publicationId: UUID, hostId: UUID): PublicationView =
         transition(publicationId, hostId) { it.hide() }
 
+    @Transactional
     fun archive(publicationId: UUID, hostId: UUID): PublicationView =
         transition(publicationId, hostId) { it.archive() }
 
+    /** Monthly pricing lives on the room; the publishing switch stays separate. */
+    @Transactional
     fun configurePricing(command: ConfigurePricingCommand): PricingView {
-        requireOwned(command.publicationId, command.hostId)
-        val pricing = pricingRepository.findByPublication(command.publicationId)
-            ?: Pricing.create(
-                id = UUID.randomUUID(),
-                publicationId = command.publicationId,
-                basePricePerNight = command.basePricePerNight,
-                currency = command.currency,
-            )
-        pricing.update(command.basePricePerNight, command.currency)
-        pricingRepository.save(pricing)
+        val publication = requireOwned(command.publicationId, command.hostId)
+        val unit = unitRepository.findById(publication.unitId)
+            ?: throw NotFoundException("Habitación no encontrada")
+        unit.changeMonthlyPrice(command.monthlyPrice, command.currency, command.priceUnit)
+        unitRepository.save(unit)
         return PricingView(
-            publicationId = pricing.publicationId,
-            basePricePerNight = pricing.basePricePerNight,
-            currency = pricing.currency,
+            publicationId = publication.id,
+            monthlyPrice = unit.monthlyPrice,
+            currency = unit.currency,
+            priceUnit = unit.priceUnit,
         )
-    }
-
-    fun configureRules(command: ConfigureRulesCommand): RulesView {
-        requireOwned(command.publicationId, command.hostId)
-        val rule = ruleRepository.findByPublication(command.publicationId)
-            ?: Rule.create(
-                id = UUID.randomUUID(),
-                publicationId = command.publicationId,
-                cancellationPolicy = command.cancellationPolicy,
-                checkInTime = command.checkInTime,
-                checkOutTime = command.checkOutTime,
-                minNights = command.minNights,
-                maxNights = command.maxNights,
-                houseRules = command.houseRules,
-            )
-        rule.update(
-            cancellationPolicy = command.cancellationPolicy,
-            checkInTime = command.checkInTime,
-            checkOutTime = command.checkOutTime,
-            minNights = command.minNights,
-            maxNights = command.maxNights,
-            houseRules = command.houseRules,
-        )
-        ruleRepository.save(rule)
-        return rule.toView()
     }
 
     fun findAllPublished(): List<PublicationView> =
-        publicationRepository.findAllPublished().map { it.toView() }
+        publicationRepository.findAllPublished().map(assembler::publicationView)
 
+    @Transactional(readOnly = true)
     fun findPublishedDetail(publicationId: UUID): PublicationDetailView? {
         val publication = publicationRepository.findById(publicationId) ?: return null
         if (publication.status != PublicationStatus.PUBLICADA) return null
         return toDetail(publication)
     }
 
+    /** Roommates of a published shared room, only with explicit consent. */
+    @Transactional(readOnly = true)
+    fun roommates(publicationId: UUID): List<RoommateView> {
+        val publication = publicationRepository.findById(publicationId)
+            ?: throw NotFoundException("Publicación no encontrada")
+        if (publication.status != PublicationStatus.PUBLICADA) {
+            throw NotFoundException("Publicación no encontrada")
+        }
+        val unit = unitRepository.findById(publication.unitId)
+            ?: throw NotFoundException("Habitación no encontrada")
+        return assembler.roommates(unit.id)
+    }
+
     private fun toDetail(publication: Publication): PublicationDetailView {
-        val unit = unitRepository.findById(publication.unitId)!!
-        val property = propertyRepository.findById(unit.propertyId)!!
+        val unit = unitRepository.findById(publication.unitId)
+            ?: throw NotFoundException("Habitación no encontrada")
+        val property = propertyRepository.findById(unit.propertyId)
+            ?: throw NotFoundException("Propiedad no encontrada")
+        val propertyView = assembler.propertyView(property)
         return PublicationDetailView(
-            publication = publication.toView(),
-            property = property.toView(),
-            unit = unit.toView(),
-            pricing = pricingRepository.findByPublication(publication.id)?.toView(),
-            rules = ruleRepository.findByPublication(publication.id)?.toView(),
+            publication = assembler.publicationView(publication),
+            property = propertyView.copy(photos = emptyList()),
+            unit = assembler.unitView(unit),
+            host = assembler.hostView(property.hostId),
+            occupancy = assembler.occupancy(unit, published = true),
+            propertyPhotos = propertyView.photos,
         )
     }
 
@@ -194,61 +180,21 @@ class PublicationService(
         action(publication)
         publication.touch(Instant.now())
         publicationRepository.save(publication)
-        return publication.toView()
+        return assembler.publicationView(publication)
     }
 
     private fun requireOwned(publicationId: UUID, hostId: UUID): Publication {
         val publication = publicationRepository.findById(publicationId)
-            ?: throw NotFoundException("Publication not found")
+            ?: throw NotFoundException("Publicación no encontrada")
         val unit = unitRepository.findById(publication.unitId)
-            ?: throw NotFoundException("Unit not found")
+            ?: throw NotFoundException("Habitación no encontrada")
         val property = propertyRepository.findById(unit.propertyId)
-            ?: throw NotFoundException("Property not found")
+            ?: throw NotFoundException("Propiedad no encontrada")
         checkOwner(property, hostId)
         return publication
     }
 
     private fun checkOwner(property: Property, hostId: UUID) {
-        if (property.hostId != hostId) throw ForbiddenException("Not the owner of this property")
+        if (property.hostId != hostId) throw ForbiddenException("No eres el anfitrión de esta propiedad")
     }
-
-    internal fun Publication.toView(): PublicationView =
-        PublicationView(
-            id = id,
-            unitId = unitId,
-            title = title,
-            status = status,
-            services = services,
-            applicableRuleCodes = applicableRuleCodes,
-        )
-
-    internal fun Unit.toView(): UnitView =
-        UnitView(
-            id = id,
-            propertyId = propertyId,
-            name = name,
-            maxGuests = maxGuests,
-            bedrooms = bedrooms,
-            beds = beds,
-            bathrooms = bathrooms,
-            typeCode = typeCode,
-            accessibilityCodes = accessibilityCodes,
-        )
-
-    internal fun Property.toView(): PropertyView =
-        PropertyView(id = id, hostId = hostId, title = title, description = description, cityId = cityId, address = address, amenities = amenities, archived = archived)
-
-    internal fun Pricing.toView(): PricingView =
-        PricingView(publicationId = publicationId, basePricePerNight = basePricePerNight, currency = currency)
-
-    internal fun Rule.toView(): RulesView =
-        RulesView(
-            publicationId = publicationId,
-            cancellationPolicy = cancellationPolicy,
-            checkInTime = checkInTime,
-            checkOutTime = checkOutTime,
-            minNights = minNights,
-            maxNights = maxNights,
-            houseRules = houseRules,
-        )
 }
