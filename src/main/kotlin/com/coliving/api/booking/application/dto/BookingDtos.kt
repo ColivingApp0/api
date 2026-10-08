@@ -1,11 +1,9 @@
 package com.coliving.api.booking.application.dto
 
-import com.coliving.api.booking.domain.enums.CancellationPolicyType
 import com.coliving.api.booking.domain.enums.ReservationEventType
 import com.coliving.api.booking.domain.enums.ReservationStatus
 import java.math.BigDecimal
 import java.time.Instant
-import java.time.LocalDate
 import java.util.UUID
 
 // ---------- Commands ----------
@@ -13,9 +11,7 @@ import java.util.UUID
 data class CreateReservationCommand(
     val guestId: UUID,
     val unitId: UUID,
-    val fromDate: LocalDate,
-    val toDate: LocalDate,
-    val occupants: Int,
+    val places: Int = 1,
     val message: String?,
 )
 
@@ -23,11 +19,6 @@ data class HostDecisionCommand(
     val reservationId: UUID,
     val hostId: UUID,
     val reason: String?,
-)
-
-data class ConfirmReservationCommand(
-    val reservationId: UUID,
-    val guestId: UUID,
 )
 
 data class CancelReservationCommand(
@@ -43,16 +34,16 @@ data class ReservationView(
     val unitId: UUID,
     val publicationId: UUID,
     val guestUserId: UUID,
-    val fromDate: LocalDate,
-    val toDate: LocalDate,
-    val occupants: Int,
+    val places: Int,
     val message: String?,
     val status: ReservationStatus,
-    val pricePerNight: BigDecimal,
+    val monthlyPrice: BigDecimal?,
     val currency: String,
-    val totalPrice: BigDecimal,
-    val cancellationPolicy: CancellationPolicyType?,
-    val holdExpiresAt: Instant?,
+    val priceUnit: String?,
+    val unitName: String?,
+    val propertyTitle: String?,
+    val cityName: String?,
+    val photoUrl: String?,
     val createdAt: Instant,
 )
 

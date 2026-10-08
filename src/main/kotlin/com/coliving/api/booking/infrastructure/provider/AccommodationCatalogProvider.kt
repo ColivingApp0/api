@@ -6,27 +6,17 @@ import com.coliving.api.booking.application.port.out.UnitCatalogPort
 import java.util.UUID
 import org.springframework.stereotype.Component
 
-/**
- * Adapter from booking's catalog port to accommodation's UnitBookingQuery —
- * same cross-context pattern as identity's UserVerificationQuery consumers.
- */
+/** Adapter from booking's catalog port to accommodation's UnitBookingQuery. */
 @Component
 class AccommodationCatalogProvider(
     private val unitBookingQuery: UnitBookingQuery,
 ) : UnitCatalogPort {
 
     override fun findBookableUnit(unitId: UUID): BookableUnit? =
-        unitBookingQuery.getUnitBookingInfo(unitId)?.let { info ->
-            BookableUnit(
-                unitId = info.unitId,
-                publicationId = info.publicationId,
-                status = info.publicationStatus,
-                maxGuests = info.maxGuests,
-                basePricePerNight = info.basePricePerNight,
-                currency = info.currency.name,
-                cancellationPolicy = info.cancellationPolicy,
-            )
-        }
+        unitBookingQuery.getUnitBookingInfo(unitId)?.toBookable()
+
+    override fun lockBookableUnit(unitId: UUID): BookableUnit? =
+        unitBookingQuery.lockUnitBookingInfo(unitId)?.toBookable()
 
     override fun unitIdsOfHost(hostId: UUID): List<UUID> = unitBookingQuery.unitIdsOfHost(hostId)
 
@@ -34,4 +24,22 @@ class AccommodationCatalogProvider(
         unitBookingQuery.isHostOfUnit(unitId, hostId)
 
     override fun hostOfUnit(unitId: UUID): UUID? = unitBookingQuery.hostOfUnit(unitId)
+
+    private fun com.coliving.api.accommodation.application.dto.UnitBookingInfo.toBookable() =
+        BookableUnit(
+            unitId = unitId,
+            propertyId = propertyId,
+            publicationId = publicationId,
+            status = publicationStatus,
+            unitName = unitName,
+            propertyTitle = propertyTitle,
+            cityName = cityName,
+            neighborhood = neighborhood,
+            photoUrl = photoUrl,
+            capacity = capacity,
+            monthlyPrice = monthlyPrice,
+            currency = currency,
+            priceUnit = priceUnit,
+            hostId = hostId,
+        )
 }
