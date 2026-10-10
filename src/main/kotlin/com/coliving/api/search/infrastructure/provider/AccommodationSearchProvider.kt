@@ -6,10 +6,6 @@ import com.coliving.api.search.application.port.out.PublicationCatalogPort
 import java.util.UUID
 import org.springframework.stereotype.Component
 
-/**
- * Adapter from the search catalog port to accommodation's
- * PublicationSearchQuery — same cross-context pattern as the other contexts.
- */
 @Component
 class AccommodationSearchProvider(
     private val publicationSearchQuery: PublicationSearchQuery,
@@ -20,15 +16,28 @@ class AccommodationSearchProvider(
             ListingFacet(
                 publicationId = info.publicationId,
                 unitId = info.unitId,
-                title = info.title,
+                propertyId = info.propertyId,
+                roomTitle = info.roomTitle,
+                propertyTitle = info.propertyTitle,
+                description = info.description,
                 cityId = info.cityId,
-                pricePerNight = info.pricePerNight,
+                cityName = info.cityName,
+                neighborhood = info.neighborhood,
+                monthlyPrice = info.monthlyPrice,
                 currency = info.currency,
+                priceUnit = info.priceUnit,
+                roomType = info.roomType,
+                bathroomType = info.bathroomType,
+                airConditioning = info.airConditioning,
+                fan = info.fan,
+                capacity = info.capacity,
+                occupiedPlaces = info.occupiedPlaces,
+                availablePlaces = info.availablePlaces,
+                photoUrl = info.photoUrl,
+                propertyPhotoUrl = info.propertyPhotoUrl,
                 updatedAt = info.publishedAt,
                 serviceCodes = info.serviceCodes,
-                roomTypeCode = info.roomTypeCode,
                 accessibilityCodes = info.accessibilityCodes,
-                minNights = info.minNights,
             )
         }
 
