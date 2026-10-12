@@ -18,11 +18,13 @@ data class UpdateProfileRequest(
     val careerId: UUID? = null,
     val academicUnlisted: Boolean = false,
     val stayPreferences: List<String> = emptyList(),
+    val avatarUrl: String? = null,
 )
 
-/** RF-013: visibility switches for affinity and academic data. */
+/** RF-013: visibility switches. */
 data class ConfigurePrivacyRequest(
     @field:NotNull(message = "affinityVisible is required")
     val affinityVisible: Boolean? = null,
     val academicVisible: Boolean = false,
+    val roommateProfileVisible: Boolean = false,
 )
