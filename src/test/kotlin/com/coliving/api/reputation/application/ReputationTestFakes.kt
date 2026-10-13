@@ -26,7 +26,7 @@ class FakeEligibleRelationPort : EligibleRelationPort {
         hostId: UUID,
         status: String = "CONFIRMADA",
     ): EligibleRelation =
-        EligibleRelation(relationId, guestId, hostId, status, java.time.LocalDate.now().minusDays(10), java.time.LocalDate.now().minusDays(5))
+        EligibleRelation(relationId, guestId, hostId, status)
             .also { relations[relationId] = it }
 }
 

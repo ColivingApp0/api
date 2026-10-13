@@ -1,7 +1,6 @@
 package com.coliving.api.reputation.application.port.out
 
 import com.coliving.api.reputation.domain.enums.RelationType
-import java.time.LocalDate
 import java.util.UUID
 
 /**
@@ -12,10 +11,8 @@ data class EligibleRelation(
     val relationId: UUID,
     val guestUserId: UUID,
     val hostUserId: UUID,
-    /** ReservationStatus name; only CONFIRMADA is eligible. */
+    /** ReservationStatus name; ACEPTADA (o la histórica CONFIRMADA) es elegible. */
     val status: String,
-    val fromDate: LocalDate,
-    val toDate: LocalDate,
 ) {
     fun parties(): Set<UUID> = setOf(guestUserId, hostUserId)
 

@@ -23,8 +23,6 @@ class BookingEvaluationProvider(
                 guestUserId = info.guestUserId,
                 hostUserId = info.hostUserId,
                 status = info.status,
-                fromDate = info.fromDate,
-                toDate = info.toDate,
             )
         }
 
