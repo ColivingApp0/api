@@ -1,58 +1,40 @@
-# Contexto `search` — Búsqueda y Favoritos
-
-Diseño del bounded context `search` (SRS grupo "Búsqueda": RF-030, RF-032,
-RF-034; cierre del grupo 02 de casos de uso).
+# Search — habitaciones con precio mensual
 
 ## Objetivo
 
-Búsqueda pública de publicaciones con filtros combinables y ordenamiento
-determinista, y gestión de favoritos de cada usuario sobre publicaciones
-PUBLICADA.
+Búsqueda de habitaciones publicadas con filtros combinables y orden determinista.
+La unidad de resultado es la **habitación**, no la propiedad completa.
 
-## Alcance implementado
+## Filtros reales
 
-| Req | Regla | Implementación |
-|-----|-------|----------------|
-| RF-030 (Esencial) | Búsqueda por ciudad, fechas y presupuesto; resultados corresponden a criterios y reflejan disponibilidad conocida | `SearchListingsService`: filtros `cityId` (catálogo), rango de precio + moneda, disponibilidad del rango de fechas vía accommodation |
-| RF-032 (Importante) | Orden por precio o actualización, determinista por consulta y versión de datos | `ListingSort.PRICE_ASC / PRICE_DESC / RECENT` con desempate por `publicationId` |
-| RF-034 (Importante) | Favoritos por usuario sobre publicaciones | `FavoriteService` + `search_favorite` (UNIQUE user+publication), solo PUBLICADA |
+`q` (ciudad/barrio/propiedad/habitación), `cityId`, `minPrice`, `maxPrice`,
+`currency`, `minCapacity`, `availableOnly` (por defecto `true`),
+`airConditioning`, `fan`, `bathroomType`, `roomType`, `propertyId`, `services`,
+`accessibilityCode`, `sort` (`RECENT`, `PRICE_ASC`, `PRICE_DESC`).
 
-## Pendiente (fuera de alcance actual)
+- Los precios son **mensuales**.
+- `availableOnly` excluye habitaciones completas; con `false` se devuelven con
+  etiqueta `Ocupada`.
+- No hay fechas ni disponibilidad por rangos.
 
-- RF-030 parcial (sector, institución cercana): requiere catálogos de
-  instituciones/sectores aún no modelados (RF-083 administración).
-- RF-031 (filtros por tipo de habitación, servicios, accesibilidad): los
-  amenities existen como texto libre en Property; falta normalización.
-- RF-035 (afinidad): depende del contexto de reputación.
+## Proyección pública
 
-## Puertos (disciplina cross-context existente)
+`PublishedListingInfo` → `ListingView`: propiedad, habitación, ciudad/barrio,
+precio mensual/unidad, capacidad, ocupadas, libres, foto de habitación y de
+propiedad, características y etiqueta de disponibilidad. **Nunca** incluye
+identidad de residentes.
 
-- `PublicationCatalogPort` → accommodation `PublicationSearchQuery`
-  (nueva proyección de lectura: solo datos públicos, RN-02 — la ubicación
-  exacta queda restringida, se expone `cityId`).
-- `UnitAvailabilityPort` → accommodation `ReservationAvailabilityPort`
-  (única fuente de verdad del estado de inventario).
-- `Favorite` referencia la publicación por UUID (sin FK cross-context);
-  `search_favorite.user_id` → `identity_user` (FK, regla del proyecto).
+## Puertos
 
-## Cambios mínimos en accommodation
-
-- `PublicationSearchQuery` + `PublicationSearchQueryService` (proyección de
-  lectura, mismo patrón que `UnitBookingQuery`).
-- `Publication` ahora porta `createdAt/updatedAt` (con `touch()`) para
-  soportar el orden por actualización; `PublicationService` lo actualiza en
-  cada transición. Sin cambios de comportamiento en reglas existentes.
+- `PublicationSearchQuery` (accommodation) → `PublicationCatalogPort` (search).
+- La ocupación sale del mismo `UnitOccupancyPort` usado por accommodation.
 
 ## Endpoints
 
-- `GET /api/v1/search/listings` — filtros opcionales combinables
-  (`cityId`, `minPrice`, `maxPrice`, `currency`, `availableFrom`,
-  `availableTo`, `sort`). Usuario autenticado.
-- `GET/POST/DELETE /api/v1/favorites` — favoritos del principal autenticado.
+- `GET /api/v1/search/listings`
+- Favoritos: `GET/POST/DELETE /api/v1/favorites[/{publicationId}]`.
 
 ## Tests
 
-- `SearchListingsServiceTest`: filtros RF-030, orden determinista RF-032
-  (incluye empates), validaciones de rango.
-- `FavoriteServiceTest`: alta, duplicado, baja, validación PUBLICADA,
-  aislamiento por usuario.
+`SearchListingsServiceTest`: filtros por texto/ciudad, precio mensual, capacidad,
+características, disponibilidad, orden determinista y validaciones.
