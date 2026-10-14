@@ -57,6 +57,12 @@ class ProfileEntity(
     @Column(name = "affinity_visible", nullable = false)
     var affinityVisible: Boolean = false,
 
+    @Column(name = "avatar_url", length = 1000)
+    var avatarUrl: String? = null,
+
+    @Column(name = "roommate_profile_visible", nullable = false)
+    var roommateProfileVisible: Boolean = false,
+
     @Column(name = "updated_at", nullable = false)
     var updatedAt: Instant = Instant.now(),
 ) {

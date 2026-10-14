@@ -24,6 +24,8 @@ object ProfileMapper {
             academicVisible = profile.academicInfo.visible,
             stayPreferences = profile.stayPreferences.codes().joinToString(SEPARATOR),
             affinityVisible = profile.affinityVisible,
+            avatarUrl = profile.avatarUrl,
+            roommateProfileVisible = profile.roommateProfileVisible,
             updatedAt = Instant.now(),
         )
 
@@ -40,6 +42,8 @@ object ProfileMapper {
         entity.academicVisible = profile.academicInfo.visible
         entity.stayPreferences = profile.stayPreferences.codes().joinToString(SEPARATOR)
         entity.affinityVisible = profile.affinityVisible
+        entity.avatarUrl = profile.avatarUrl
+        entity.roommateProfileVisible = profile.roommateProfileVisible
         entity.updatedAt = Instant.now()
         return entity
     }
@@ -62,5 +66,7 @@ object ProfileMapper {
                 entity.stayPreferences?.split(SEPARATOR).orEmpty(),
             ),
             affinityVisible = entity.affinityVisible,
+            avatarUrl = entity.avatarUrl,
+            roommateProfileVisible = entity.roommateProfileVisible,
         )
 }

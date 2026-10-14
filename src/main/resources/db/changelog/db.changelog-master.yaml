@@ -26,3 +26,7 @@ databaseChangeLog:
       file: db/changelog/changesets/9.1.0-catalog-schema.yaml
   - include:
       file: db/changelog/changesets/9.2.0-listing-catalog-references.yaml
+  - include:
+      file: db/changelog/changesets/10.0.0-messaging-push-tokens.yaml
+  - include:
+      file: db/changelog/changesets/11.0.0-monthly-room-rental.yaml

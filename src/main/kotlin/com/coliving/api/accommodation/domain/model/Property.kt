@@ -3,8 +3,10 @@ package com.coliving.api.accommodation.domain.model
 import java.util.UUID
 
 /**
- * Property aggregate (Propiedad), owned by a host.
- * [cityId] is a plain reference to the city catalog (no FK).
+ * Property aggregate (Propiedad), owned by a host. It holds the shared
+ * information of the building; each rentable room is a [Unit] of this property.
+ * [cityId] is a plain reference to the city catalog (no FK); [cityName] and
+ * [neighborhood] are the human-readable location shown to guests.
  */
 class Property(
     val id: UUID,
@@ -12,6 +14,8 @@ class Property(
     title: String?,
     description: String?,
     cityId: UUID?,
+    cityName: String?,
+    neighborhood: String?,
     address: String?,
     amenities: List<String>,
     archived: Boolean,
@@ -24,6 +28,12 @@ class Property(
         private set
 
     var cityId: UUID? = cityId
+        private set
+
+    var cityName: String? = cityName
+        private set
+
+    var neighborhood: String? = neighborhood
         private set
 
     var address: String? = address
@@ -39,12 +49,16 @@ class Property(
         title: String?,
         description: String?,
         cityId: UUID?,
+        cityName: String?,
+        neighborhood: String?,
         address: String?,
         amenities: List<String>,
     ) {
         this.title = normalize(title)
         this.description = normalize(description)
         this.cityId = cityId
+        this.cityName = normalize(cityName)
+        this.neighborhood = normalize(neighborhood)
         this.address = normalize(address)
         this.amenities = amenities.map { it.trim() }.filter { it.isNotBlank() }.distinct()
     }
@@ -63,6 +77,8 @@ class Property(
             title: String,
             description: String?,
             cityId: UUID?,
+            cityName: String?,
+            neighborhood: String?,
             address: String?,
             amenities: List<String>,
         ): Property = Property(
@@ -71,6 +87,8 @@ class Property(
             title = title.trim(),
             description = description?.trim()?.takeIf { it.isNotBlank() },
             cityId = cityId,
+            cityName = cityName?.trim()?.takeIf { it.isNotBlank() },
+            neighborhood = neighborhood?.trim()?.takeIf { it.isNotBlank() },
             address = address?.trim()?.takeIf { it.isNotBlank() },
             amenities = amenities.map { it.trim() }.filter { it.isNotBlank() }.distinct(),
             archived = false,

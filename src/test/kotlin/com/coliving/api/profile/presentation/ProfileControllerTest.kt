@@ -77,6 +77,8 @@ class ProfileControllerTest {
             academicVisible = false,
             stayPreferenceCodes = listOf("wifi"),
             affinityVisible = false,
+            avatarUrl = null,
+            roommateProfileVisible = false,
             verificationLevel = VerificationLevel.NO_VERIFICADO,
         )
         `when`(getProfileService.get(userId)).thenReturn(view)
@@ -104,6 +106,8 @@ class ProfileControllerTest {
             academicVisible = false,
             stayPreferenceCodes = emptyList(),
             affinityVisible = false,
+            avatarUrl = null,
+            roommateProfileVisible = false,
             verificationLevel = VerificationLevel.NO_VERIFICADO,
         )
         `when`(
@@ -177,6 +181,8 @@ class ProfileControllerTest {
             academicVisible = true,
             stayPreferenceCodes = emptyList(),
             affinityVisible = true,
+            avatarUrl = null,
+            roommateProfileVisible = false,
             verificationLevel = VerificationLevel.NO_VERIFICADO,
         )
         `when`(

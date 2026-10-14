@@ -2,12 +2,10 @@ package com.coliving.api.search.application
 
 import com.coliving.api.search.application.port.out.ListingFacet
 import com.coliving.api.search.application.port.out.PublicationCatalogPort
-import com.coliving.api.search.application.port.out.UnitAvailabilityPort
 import com.coliving.api.search.domain.model.Favorite
 import com.coliving.api.search.domain.repository.FavoriteRepository
 import java.math.BigDecimal
 import java.time.Instant
-import java.time.LocalDate
 import java.util.UUID
 
 class FakePublicationCatalogPort : PublicationCatalogPort {
@@ -20,31 +18,46 @@ class FakePublicationCatalogPort : PublicationCatalogPort {
 
     fun add(
         publicationId: UUID = UUID.randomUUID(),
-        title: String = "Listing",
-        cityId: UUID? = null,
-        price: BigDecimal? = BigDecimal("100000"),
+        roomTitle: String = "Habitación",
+        propertyTitle: String = "Casa",
+        cityName: String? = "Bogotá",
+        price: BigDecimal? = BigDecimal("800000"),
         currency: String? = "COP",
+        capacity: Int = 2,
+        available: Int = 2,
+        airConditioning: Boolean = false,
+        fan: Boolean = false,
+        bathroomType: String = "COMPARTIDO",
+        roomType: String = "COMPARTIDA",
         updatedAt: Instant = Instant.EPOCH,
     ): ListingFacet {
         val facet = ListingFacet(
             publicationId = publicationId,
             unitId = UUID.randomUUID(),
-            title = title,
-            cityId = cityId,
-            pricePerNight = price,
+            propertyId = UUID.randomUUID(),
+            roomTitle = roomTitle,
+            propertyTitle = propertyTitle,
+            description = "$propertyTitle · $roomTitle",
+            cityId = null,
+            cityName = cityName,
+            neighborhood = null,
+            monthlyPrice = price,
             currency = currency,
+            priceUnit = "POR_PERSONA",
+            roomType = roomType,
+            bathroomType = bathroomType,
+            airConditioning = airConditioning,
+            fan = fan,
+            capacity = capacity,
+            occupiedPlaces = capacity - available,
+            availablePlaces = available,
+            photoUrl = null,
+            propertyPhotoUrl = null,
             updatedAt = updatedAt,
         )
         listings.add(facet)
         return facet
     }
-}
-
-class FakeSearchAvailabilityPort : UnitAvailabilityPort {
-    val unavailable = mutableSetOf<UUID>()
-
-    override fun isRangeAvailable(unitId: UUID, from: LocalDate, to: LocalDate): Boolean =
-        unitId !in unavailable
 }
 
 class FakeFavoriteRepository : FavoriteRepository {

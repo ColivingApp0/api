@@ -33,8 +33,8 @@ class CreateEvaluationService(
     fun create(command: CreateEvaluationCommand): EvaluationView {
         val relation = eligibleRelationPort.findRelation(command.relationId)
             ?: throw NotFoundException("The relation to evaluate does not exist")
-        if (relation.status != ELIGIBLE_STATUS) {
-            throw ConflictException("Only a confirmed stay can be evaluated")
+        if (relation.status !in ELIGIBLE_STATUSES) {
+            throw ConflictException("Only an accepted stay can be evaluated")
         }
         if (command.authorUserId !in relation.parties()) {
             throw ForbiddenException("Only the parties of the relation can evaluate it")
@@ -59,7 +59,7 @@ class CreateEvaluationService(
     }
 
     companion object {
-        /** Reservation status that makes a relation eligible (RF-070). */
-        const val ELIGIBLE_STATUS = "CONFIRMADA"
+        /** Reservation statuses that make a relation eligible (RF-070). */
+        val ELIGIBLE_STATUSES = setOf("ACEPTADA", "CONFIRMADA")
     }
 }

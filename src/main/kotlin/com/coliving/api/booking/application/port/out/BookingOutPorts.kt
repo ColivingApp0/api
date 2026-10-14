@@ -1,62 +1,51 @@
 package com.coliving.api.booking.application.port.out
 
+import com.coliving.api.accommodation.domain.enums.Currency
+import com.coliving.api.accommodation.domain.enums.PriceUnit
 import java.math.BigDecimal
-import java.time.LocalDate
 import java.util.UUID
 
 /**
- * Availability contract the booking context consumes from `accommodation`.
- * Implemented by an adapter delegating to accommodation's
- * ReservationAvailabilityPort (AvailabilityLockService) — the single
- * enforcement point of the no-double-booking invariant.
- */
-interface UnitAvailabilityPort {
-
-    fun isRangeAvailable(unitId: UUID, from: LocalDate, to: LocalDate): Boolean
-
-    /** Atomically locks every day in [from, to) on behalf of [reservationId]. */
-    fun lockRange(unitId: UUID, from: LocalDate, to: LocalDate, reservationId: UUID)
-
-    /** Releases the days held by [reservationId] back to available. */
-    fun unlockRange(unitId: UUID, from: LocalDate, to: LocalDate, reservationId: UUID)
-
-    /** Held days (BLOQUEADO) become OCUPADO when the reservation is confirmed. */
-    fun confirmRange(unitId: UUID, from: LocalDate, to: LocalDate, reservationId: UUID)
-}
-
-/**
- * Catalog snapshot of a unit, read from `accommodation`. Non-null only when
- * the unit and its publication exist; [BookableUnit.status] must be PUBLICADA
- * for the unit to admit requests (RN-03). Price/policy values feed the
+ * Catalog snapshot of a room, read from `accommodation`. Non-null only when the
+ * room and its publication exist; [BookableUnit.status] must be PUBLICADA for
+ * the room to admit requests (RN-03). The monthly price is frozen in the
  * reservation snapshot (RN-07).
  */
 data class BookableUnit(
     val unitId: UUID,
+    val propertyId: UUID,
     val publicationId: UUID,
     val status: String,
-    val maxGuests: Int,
-    val basePricePerNight: BigDecimal,
-    val currency: String,
-    val cancellationPolicy: String?,
+    val unitName: String,
+    val propertyTitle: String,
+    val cityName: String?,
+    val neighborhood: String?,
+    val photoUrl: String?,
+    val capacity: Int,
+    val monthlyPrice: BigDecimal?,
+    val currency: Currency,
+    val priceUnit: PriceUnit,
+    val hostId: UUID,
 )
 
 interface UnitCatalogPort {
 
     fun findBookableUnit(unitId: UUID): BookableUnit?
 
+    /** Same snapshot with a pessimistic write lock on the room row. */
+    fun lockBookableUnit(unitId: UUID): BookableUnit?
+
     fun unitIdsOfHost(hostId: UUID): List<UUID>
 
     fun isHostOfUnit(unitId: UUID, hostId: UUID): Boolean
 
-    /** Owner of the unit, or null when the unit does not exist (messaging, RF-050). */
+    /** Owner of the room, or null when the room does not exist (messaging). */
     fun hostOfUnit(unitId: UUID): UUID?
 }
 
 /**
- * Guest gate (RF-040: "la solicitud se crea solo cuando ... el perfil cumple
- * los requisitos mínimos"). Implemented by an adapter to identity's
- * UserVerificationQuery — a guest may request a stay only with COMPLETO
- * verification.
+ * Guest gate (RF-040): a guest may request a place only with COMPLETO
+ * verification. Implemented by an adapter to identity's UserVerificationQuery.
  */
 interface GuestVerificationPort {
 

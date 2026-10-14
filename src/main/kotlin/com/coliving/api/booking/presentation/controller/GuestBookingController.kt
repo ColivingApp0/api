@@ -1,11 +1,9 @@
 package com.coliving.api.booking.presentation.controller
 
 import com.coliving.api.booking.application.dto.CancelReservationCommand
-import com.coliving.api.booking.application.dto.ConfirmReservationCommand
 import com.coliving.api.booking.application.dto.CreateReservationCommand
 import com.coliving.api.booking.application.dto.ReservationView
 import com.coliving.api.booking.application.usecase.CancelReservationService
-import com.coliving.api.booking.application.usecase.ConfirmReservationService
 import com.coliving.api.booking.application.usecase.CreateReservationService
 import com.coliving.api.booking.application.usecase.ListReservationsService
 import com.coliving.api.booking.presentation.dto.CancelRequest
@@ -24,20 +22,15 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
-/**
- * Guest endpoints for reservations (HUESPED_* roles). Ownership is enforced
- * inside the application services; role is checked here, mirroring the host
- * controller.
- */
+/** Guest endpoints for monthly room requests (HUESPED_* roles). */
 @Tag(
     name = "Reservations",
-    description = "Guest endpoints for reservations (HUESPED_* roles): create, confirm, cancel and list (RF-040, RF-043, RF-044).",
+    description = "Guest endpoints for monthly room requests: create, cancel and list (RF-040, RF-044, adapted to monthly rent).",
 )
 @RestController
 @RequestMapping("/api/v1/reservations")
 class GuestBookingController(
     private val createReservationService: CreateReservationService,
-    private val confirmReservationService: ConfirmReservationService,
     private val cancelReservationService: CancelReservationService,
     private val listReservationsService: ListReservationsService,
 ) {
@@ -52,9 +45,7 @@ class GuestBookingController(
             CreateReservationCommand(
                 guestId = current.userId,
                 unitId = request.unitId,
-                fromDate = request.fromDate,
-                toDate = request.toDate,
-                occupants = request.occupants,
+                places = request.places,
                 message = request.message,
             ),
         )
@@ -63,16 +54,6 @@ class GuestBookingController(
     @GetMapping("/mine")
     fun listMine(@AuthenticationPrincipal current: CurrentUser): List<ReservationView> =
         requireGuest(current) { listReservationsService.listMine(current.userId) }
-
-    @PostMapping("/{id}/confirm")
-    fun confirm(
-        @AuthenticationPrincipal current: CurrentUser,
-        @PathVariable id: UUID,
-    ): ReservationView = requireGuest(current) {
-        confirmReservationService.confirm(
-            ConfirmReservationCommand(reservationId = id, guestId = current.userId),
-        )
-    }
 
     @PostMapping("/{id}/cancel")
     fun cancel(

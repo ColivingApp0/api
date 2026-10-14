@@ -1,39 +1,37 @@
 package com.coliving.api.accommodation.presentation.controller
 
-import com.coliving.api.accommodation.application.dto.BlockDatesCommand
+import com.coliving.api.accommodation.application.dto.AddPhotoCommand
+import com.coliving.api.accommodation.application.dto.ConfigureCatalogReferencesCommand
+import com.coliving.api.accommodation.application.dto.ConfigurePricingCommand
 import com.coliving.api.accommodation.application.dto.CreatePropertyCommand
 import com.coliving.api.accommodation.application.dto.CreatePublicationCommand
 import com.coliving.api.accommodation.application.dto.CreateUnitCommand
-import com.coliving.api.accommodation.application.dto.DayAvailabilityView
-import com.coliving.api.accommodation.application.dto.PropertyView
+import com.coliving.api.accommodation.application.dto.DeletePhotoCommand
 import com.coliving.api.accommodation.application.dto.PricingView
+import com.coliving.api.accommodation.application.dto.PropertyDetailView
+import com.coliving.api.accommodation.application.dto.PropertyView
 import com.coliving.api.accommodation.application.dto.PublicationView
-import com.coliving.api.accommodation.application.dto.RulesView
+import com.coliving.api.accommodation.application.dto.SetUnitAvailabilityCommand
 import com.coliving.api.accommodation.application.dto.UnitView
-import com.coliving.api.accommodation.application.dto.UnblockDatesCommand
 import com.coliving.api.accommodation.application.dto.UpdatePropertyCommand
 import com.coliving.api.accommodation.application.dto.UpdateUnitCommand
-import com.coliving.api.accommodation.application.dto.ConfigurePricingCommand
-import com.coliving.api.accommodation.application.dto.ConfigureCatalogReferencesCommand
-import com.coliving.api.accommodation.application.dto.ConfigureRulesCommand
-import com.coliving.api.accommodation.application.usecase.AvailabilityLockService
 import com.coliving.api.accommodation.application.usecase.PropertyService
 import com.coliving.api.accommodation.application.usecase.PublicationService
 import com.coliving.api.accommodation.application.usecase.UnitService
-import com.coliving.api.accommodation.presentation.dto.ConfigurePricingRequest
+import com.coliving.api.accommodation.presentation.dto.AddPhotoRequest
 import com.coliving.api.accommodation.presentation.dto.ConfigureCatalogReferencesRequest
-import com.coliving.api.accommodation.presentation.dto.ConfigureRulesRequest
+import com.coliving.api.accommodation.presentation.dto.ConfigurePricingRequest
 import com.coliving.api.accommodation.presentation.dto.CreatePropertyRequest
 import com.coliving.api.accommodation.presentation.dto.CreatePublicationRequest
 import com.coliving.api.accommodation.presentation.dto.CreateUnitRequest
+import com.coliving.api.accommodation.presentation.dto.ReorderPhotosRequest
+import com.coliving.api.accommodation.presentation.dto.SetAvailabilityRequest
 import com.coliving.api.accommodation.presentation.dto.UpdatePropertyRequest
 import com.coliving.api.accommodation.presentation.dto.UpdateUnitRequest
 import com.coliving.api.shared.security.CurrentUser
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
-import java.time.LocalDate
 import java.util.UUID
-import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -45,17 +43,16 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * Host endpoints (ANFITRION only). The role is checked via the shared
- * principal; ownership is enforced inside the application services.
+ * Host endpoints (ANFITRION only) for monthly room rental. Ownership is
+ * enforced inside the application services.
  */
 @Tag(
     name = "Host Accommodation",
-    description = "Properties, units, publications, pricing, rules and availability of the ANFITRION (RF-020..RF-024).",
+    description = "Properties, rooms, photographs, monthly pricing and commercial availability of the ANFITRION.",
 )
 @RestController
 @RequestMapping("/api/v1/host")
@@ -63,7 +60,6 @@ class HostAccommodationController(
     private val propertyService: PropertyService,
     private val unitService: UnitService,
     private val publicationService: PublicationService,
-    private val availabilityLockService: AvailabilityLockService,
 ) {
 
     // ---------- Properties ----------
@@ -80,6 +76,8 @@ class HostAccommodationController(
                 title = request.title,
                 description = request.description,
                 cityId = request.cityId,
+                cityName = request.cityName,
+                neighborhood = request.neighborhood,
                 address = request.address,
                 amenities = request.amenities,
             ),
@@ -89,6 +87,12 @@ class HostAccommodationController(
     @GetMapping("/properties")
     fun listProperties(@AuthenticationPrincipal current: CurrentUser): List<PropertyView> =
         requireHost(current) { propertyService.listByHost(current.userId) }
+
+    @GetMapping("/properties/{id}")
+    fun propertyDetail(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+    ): PropertyDetailView = requireHost(current) { propertyService.hostDetail(id, current.userId) }
 
     @PatchMapping("/properties/{id}")
     fun updateProperty(
@@ -103,13 +107,43 @@ class HostAccommodationController(
                 title = request.title,
                 description = request.description,
                 cityId = request.cityId,
+                cityName = request.cityName,
+                neighborhood = request.neighborhood,
                 address = request.address,
                 amenities = request.amenities ?: emptyList(),
             ),
         )
     }
 
-    // ---------- Units ----------
+    @PostMapping("/properties/{id}/photos")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun addPropertyPhoto(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+        @Valid @RequestBody request: AddPhotoRequest,
+    ): PropertyView = requireHost(current) {
+        propertyService.addPhoto(AddPhotoCommand(id, current.userId, request.url, request.position))
+    }
+
+    @DeleteMapping("/properties/{id}/photos/{photoId}")
+    fun deletePropertyPhoto(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+        @PathVariable photoId: UUID,
+    ): PropertyView = requireHost(current) {
+        propertyService.deletePhoto(DeletePhotoCommand(id, photoId, current.userId))
+    }
+
+    @PutMapping("/properties/{id}/photos/order")
+    fun reorderPropertyPhotos(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+        @Valid @RequestBody request: ReorderPhotosRequest,
+    ): PropertyView = requireHost(current) {
+        propertyService.reorderPhotos(id, current.userId, request.photoIds)
+    }
+
+    // ---------- Rooms ----------
 
     @PostMapping("/properties/{id}/units")
     @ResponseStatus(HttpStatus.CREATED)
@@ -123,12 +157,19 @@ class HostAccommodationController(
                 propertyId = id,
                 hostId = current.userId,
                 name = request.name,
+                description = request.description,
                 maxGuests = request.maxGuests,
-                bedrooms = request.bedrooms,
-                beds = request.beds,
-                bathrooms = request.bathrooms,
+                monthlyPrice = request.monthlyPrice,
+                currency = request.currency,
+                priceUnit = request.priceUnit,
+                roomType = request.roomType,
+                bathroomType = request.bathroomType,
+                airConditioning = request.airConditioning,
+                fan = request.fan,
+                commonAreas = request.commonAreas,
                 typeCode = request.typeCode,
                 accessibilityCodes = request.accessibilityCodes.toSet(),
+                sortOrder = request.sortOrder,
             ),
         )
     }
@@ -137,7 +178,13 @@ class HostAccommodationController(
     fun listUnits(
         @AuthenticationPrincipal current: CurrentUser,
         @PathVariable id: UUID,
-    ): List<UnitView> = requireHost(current) { unitService.listByProperty(id) }
+    ): List<UnitView> = requireHost(current) { unitService.listByProperty(id, current.userId) }
+
+    @GetMapping("/units/{id}")
+    fun getUnit(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+    ): UnitView = requireHost(current) { unitService.findUnit(id, current.userId) }
 
     @PatchMapping("/units/{id}")
     fun updateUnit(
@@ -150,14 +197,64 @@ class HostAccommodationController(
                 unitId = id,
                 hostId = current.userId,
                 name = request.name,
+                description = request.description,
                 maxGuests = request.maxGuests,
-                bedrooms = request.bedrooms,
-                beds = request.beds,
-                bathrooms = request.bathrooms,
+                monthlyPrice = request.monthlyPrice,
+                currency = request.currency,
+                priceUnit = request.priceUnit,
+                roomType = request.roomType,
+                bathroomType = request.bathroomType,
+                airConditioning = request.airConditioning,
+                fan = request.fan,
+                commonAreas = request.commonAreas,
                 typeCode = request.typeCode,
                 accessibilityCodes = request.accessibilityCodes?.toSet(),
+                sortOrder = request.sortOrder,
             ),
         )
+    }
+
+    @PutMapping("/units/{id}/availability")
+    fun setUnitAvailability(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+        @Valid @RequestBody request: SetAvailabilityRequest,
+    ): UnitView = requireHost(current) {
+        unitService.setAvailability(
+            SetUnitAvailabilityCommand(
+                unitId = id,
+                hostId = current.userId,
+                enabled = request.enabled ?: false,
+            ),
+        )
+    }
+
+    @PostMapping("/units/{id}/photos")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun addUnitPhoto(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+        @Valid @RequestBody request: AddPhotoRequest,
+    ): UnitView = requireHost(current) {
+        unitService.addPhoto(AddPhotoCommand(id, current.userId, request.url, request.position))
+    }
+
+    @DeleteMapping("/units/{id}/photos/{photoId}")
+    fun deleteUnitPhoto(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+        @PathVariable photoId: UUID,
+    ): UnitView = requireHost(current) {
+        unitService.deletePhoto(id, photoId, current.userId)
+    }
+
+    @PutMapping("/units/{id}/photos/order")
+    fun reorderUnitPhotos(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+        @Valid @RequestBody request: ReorderPhotosRequest,
+    ): UnitView = requireHost(current) {
+        unitService.reorderPhotos(id, current.userId, request.photoIds)
     }
 
     // ---------- Publications ----------
@@ -180,7 +277,6 @@ class HostAccommodationController(
         )
     }
 
-    /** RF-031: updates the searchable catalog references of the listing. */
     @PutMapping("/publications/{id}/catalog-references")
     fun configureCatalogReferences(
         @AuthenticationPrincipal current: CurrentUser,
@@ -237,58 +333,11 @@ class HostAccommodationController(
             ConfigurePricingCommand(
                 publicationId = id,
                 hostId = current.userId,
-                basePricePerNight = request.basePricePerNight ?: error("basePricePerNight is required"),
+                monthlyPrice = request.monthlyPrice ?: error("monthlyPrice is required"),
                 currency = request.currency ?: error("currency is required"),
+                priceUnit = request.priceUnit,
             ),
         )
-    }
-
-    @PutMapping("/publications/{id}/rules")
-    fun configureRules(
-        @AuthenticationPrincipal current: CurrentUser,
-        @PathVariable id: UUID,
-        @Valid @RequestBody request: ConfigureRulesRequest,
-    ): RulesView = requireHost(current) {
-        publicationService.configureRules(
-            ConfigureRulesCommand(
-                publicationId = id,
-                hostId = current.userId,
-                cancellationPolicy = request.cancellationPolicy ?: error("cancellationPolicy is required"),
-                checkInTime = request.checkInTime ?: error("checkInTime is required"),
-                checkOutTime = request.checkOutTime ?: error("checkOutTime is required"),
-                minNights = request.minNights,
-                maxNights = request.maxNights,
-                houseRules = request.houseRules,
-            ),
-        )
-    }
-
-    // ---------- Availability (host blocks) ----------
-
-    @PutMapping("/units/{id}/availability/blocks")
-    fun blockDates(
-        @AuthenticationPrincipal current: CurrentUser,
-        @PathVariable id: UUID,
-        @RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate,
-        @RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) to: LocalDate,
-    ): List<DayAvailabilityView> = requireHost(current) {
-        availabilityLockService.blockDates(
-            BlockDatesCommand(unitId = id, hostId = current.userId, from = from, to = to),
-        )
-        availabilityLockService.getAvailability(id, from, to)
-    }
-
-    @DeleteMapping("/units/{id}/availability/blocks")
-    fun unblockDates(
-        @AuthenticationPrincipal current: CurrentUser,
-        @PathVariable id: UUID,
-        @RequestParam("from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate,
-        @RequestParam("to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) to: LocalDate,
-    ): List<DayAvailabilityView> = requireHost(current) {
-        availabilityLockService.unblockDates(
-            UnblockDatesCommand(unitId = id, hostId = current.userId, from = from, to = to),
-        )
-        availabilityLockService.getAvailability(id, from, to)
     }
 
     private fun <T> requireHost(current: CurrentUser, block: () -> T): T {

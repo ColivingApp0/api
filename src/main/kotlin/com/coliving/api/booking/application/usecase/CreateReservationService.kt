@@ -2,10 +2,9 @@ package com.coliving.api.booking.application.usecase
 
 import com.coliving.api.booking.application.dto.CreateReservationCommand
 import com.coliving.api.booking.application.dto.ReservationView
+import com.coliving.api.booking.application.port.out.BookableUnit
 import com.coliving.api.booking.application.port.out.GuestVerificationPort
-import com.coliving.api.booking.application.port.out.UnitAvailabilityPort
 import com.coliving.api.booking.application.port.out.UnitCatalogPort
-import com.coliving.api.booking.domain.enums.CancellationPolicyType
 import com.coliving.api.booking.domain.enums.ReservationEventType
 import com.coliving.api.booking.domain.model.Reservation
 import com.coliving.api.booking.domain.model.ReservationEvent
@@ -15,71 +14,69 @@ import com.coliving.api.shared.error.ConflictException
 import com.coliving.api.shared.error.ForbiddenException
 import com.coliving.api.shared.error.NotFoundException
 import java.time.Instant
-import java.time.LocalDate
 import java.util.UUID
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 /**
- * Creates a reservation request (RF-040). Guards, in order:
+ * Creates a monthly room request (RF-040 adapted).
  *
- * 1. Unit exists and its publication is PUBLICADA (RN-03).
- * 2. Dates in the future and guests within the unit capacity.
- * 3. Guest profile meets the minimum verification level (RF-040).
- * 4. The unit's range is free (read check; the *enforcing* lock happens on
- *    host acceptance, per RF-043's provisional-reserve flow).
+ * Guards, in order:
+ * 1. Room exists and its publication is PUBLICADA (RN-03).
+ * 2. Monthly price is configured and the room has free places.
+ * 3. Guest profile meets the minimum verification level.
+ * 4. The guest has no other active request for the same room.
  *
- * Economic conditions are snapshotted (RN-07): price per night, currency and
- * cancellation policy are copied from the publication at request time.
+ * A pending request does NOT occupy a place; only acceptance does.
  */
 @Service
 class CreateReservationService(
     private val reservationRepository: ReservationRepository,
     private val reservationEventRepository: ReservationEventRepository,
     internal val unitCatalogPort: UnitCatalogPort,
-    private val unitAvailabilityPort: UnitAvailabilityPort,
     private val guestVerificationPort: GuestVerificationPort,
 ) {
 
     @Transactional
     fun create(command: CreateReservationCommand): ReservationView {
         val now = Instant.now()
-        val bookable = unitCatalogPort.findBookableUnit(command.unitId)
-            ?: throw NotFoundException("Unit not found or without publication")
-        if (bookable.status != "PUBLICADA") {
-            throw ConflictException("The publication does not admit requests (status=${bookable.status})")
+        val room = unitCatalogPort.findBookableUnit(command.unitId)
+            ?: throw NotFoundException("Habitación no encontrada")
+        if (room.status != "PUBLICADA") {
+            throw ConflictException("La habitación no acepta solicitudes en este momento")
         }
-        if (bookable.maxGuests < command.occupants) {
-            throw ConflictException(
-                "Unit capacity is ${bookable.maxGuests}, requested $command.occupants occupants",
-            )
+        val monthlyPrice = room.monthlyPrice
+            ?: throw ConflictException("La habitación no tiene precio mensual configurado")
+        if (command.places <= 0) {
+            throw ConflictException("Debes solicitar al menos una plaza")
+        }
+        val occupied = reservationRepository.occupiedPlacesOf(listOf(room.unitId))[room.unitId] ?: 0
+        val available = (room.capacity - occupied).coerceAtLeast(0)
+        if (available <= 0 || command.places > available) {
+            throw ConflictException("La habitación no tiene plazas disponibles")
+        }
+        if (reservationRepository.hasActiveRequest(command.guestId, room.unitId)) {
+            throw ConflictException("Ya tienes una solicitud activa para esta habitación")
         }
         if (!guestVerificationPort.hasMinimumVerification(command.guestId)) {
-            throw ForbiddenException("Guest verification level does not meet the minimum requirement")
-        }
-        if (!unitAvailabilityPort.isRangeAvailable(command.unitId, command.fromDate, command.toDate)) {
-            throw ConflictException("The requested dates are not available")
+            throw ForbiddenException("Completa tu verificación para enviar solicitudes")
         }
 
         val reservation = Reservation.request(
             id = UUID.randomUUID(),
-            unitId = command.unitId,
-            publicationId = bookable.publicationId,
+            unitId = room.unitId,
+            publicationId = room.publicationId,
             guestUserId = command.guestId,
-            fromDate = command.fromDate,
-            toDate = command.toDate,
-            occupants = command.occupants,
+            places = command.places,
             message = command.message,
-            pricePerNight = bookable.basePricePerNight,
-            currency = bookable.currency,
-            cancellationPolicy = bookable.cancellationPolicy?.let { policyName ->
-                runCatching { CancellationPolicyType.valueOf(policyName) }.getOrNull()
-            },
+            monthlyPrice = monthlyPrice,
+            currency = room.currency.name,
+            priceUnit = room.priceUnit.name,
             now = now,
         )
         reservationRepository.save(reservation)
         recordEvent(reservation.id, ReservationEventType.CREADA, command.guestId, null, now)
-        return toView(reservation)
+        return toView(reservation, room)
     }
 
     internal fun recordEvent(
@@ -103,36 +100,30 @@ class CreateReservationService(
 
     internal fun loadReservation(reservationId: UUID): Reservation =
         reservationRepository.findById(reservationId)
-            ?: throw NotFoundException("Reservation not found")
-
-    internal fun requireGuest(reservation: Reservation, guestId: UUID) {
-        if (reservation.guestUserId != guestId) {
-            throw ForbiddenException("Not the guest of this reservation")
-        }
-    }
+            ?: throw NotFoundException("Solicitud no encontrada")
 
     internal fun requireHostOfUnit(unitId: UUID, hostId: UUID) {
         if (!unitCatalogPort.isHostOfUnit(unitId, hostId)) {
-            throw ForbiddenException("Not the host of this unit")
+            throw ForbiddenException("No eres el anfitrión de esta habitación")
         }
     }
 
-    internal fun toView(reservation: Reservation): ReservationView =
+    internal fun toView(reservation: Reservation, room: BookableUnit? = null): ReservationView =
         ReservationView(
             id = reservation.id,
             unitId = reservation.unitId,
             publicationId = reservation.publicationId,
             guestUserId = reservation.guestUserId,
-            fromDate = reservation.fromDate,
-            toDate = reservation.toDate,
-            occupants = reservation.occupants,
+            places = reservation.places,
             message = reservation.message,
             status = reservation.status,
-            pricePerNight = reservation.pricePerNight,
+            monthlyPrice = reservation.monthlyPrice,
             currency = reservation.currency,
-            totalPrice = reservation.totalPrice,
-            cancellationPolicy = reservation.cancellationPolicy,
-            holdExpiresAt = reservation.holdExpiresAt,
+            priceUnit = reservation.priceUnit,
+            unitName = room?.unitName,
+            propertyTitle = room?.propertyTitle,
+            cityName = room?.cityName,
+            photoUrl = room?.photoUrl,
             createdAt = reservation.createdAt,
         )
 }

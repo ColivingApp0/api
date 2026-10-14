@@ -69,6 +69,13 @@ class Publication(
         updatedAt = now
     }
 
+    /** Keeps the listing title aligned with the room name. */
+    fun rename(title: String, now: Instant) {
+        if (title.isBlank()) return
+        this.title = title.trim()
+        this.updatedAt = now
+    }
+
     fun publish() {
         require(
             status in setOf(PublicationStatus.BORRADOR, PublicationStatus.PAUSADA, PublicationStatus.OCULTA),

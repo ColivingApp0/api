@@ -1,37 +1,72 @@
 package com.coliving.api.accommodation.domain.model
 
+import com.coliving.api.accommodation.domain.enums.BathroomType
+import com.coliving.api.accommodation.domain.enums.Currency
+import com.coliving.api.accommodation.domain.enums.PriceUnit
+import com.coliving.api.accommodation.domain.enums.RoomType
 import com.coliving.api.shared.error.InvalidArgumentException
+import java.math.BigDecimal
 import java.util.UUID
 
 /**
- * Unit inside a property; the reservation-granularity entity (availability slots
- * and (future) bookings target a unit).
+ * Rentable room inside a property (the previous `Unit` granularity). It carries
+ * its own monthly rent, capacity, characteristics and photographs.
+ *
+ * Occupancy is NOT stored here: it is derived from accepted reservations so it
+ * can never drift from the real records (see the occupancy query port).
+ * Effective availability = published/commercial availability AND free places.
  */
 class Unit(
     val id: UUID,
     val propertyId: UUID,
     name: String,
+    description: String?,
     maxGuests: Int,
-    bedrooms: Int,
-    beds: Int,
-    bathrooms: Int,
+    monthlyPrice: BigDecimal?,
+    currency: Currency,
+    priceUnit: PriceUnit,
+    roomType: RoomType,
+    bathroomType: BathroomType,
+    airConditioning: Boolean,
+    fan: Boolean,
+    commonAreas: List<String>,
     typeCode: UUID? = null,
     accessibilityCodes: Set<UUID> = emptySet(),
+    sortOrder: Int = 0,
 ) {
 
     var name: String = name
         private set
 
+    var description: String? = description
+        private set
+
+    /** Maximum number of people/places the room can host. */
     var maxGuests: Int = maxGuests
         private set
 
-    var bedrooms: Int = bedrooms
+    var monthlyPrice: BigDecimal? = monthlyPrice
         private set
 
-    var beds: Int = beds
+    var currency: Currency = currency
         private set
 
-    var bathrooms: Int = bathrooms
+    var priceUnit: PriceUnit = priceUnit
+        private set
+
+    var roomType: RoomType = roomType
+        private set
+
+    var bathroomType: BathroomType = bathroomType
+        private set
+
+    var airConditioning: Boolean = airConditioning
+        private set
+
+    var fan: Boolean = fan
+        private set
+
+    var commonAreas: List<String> = commonAreas
         private set
 
     /**
@@ -45,28 +80,72 @@ class Unit(
     var accessibilityCodes: Set<UUID> = accessibilityCodes
         private set
 
+    var sortOrder: Int = sortOrder
+        private set
+
     fun update(
         name: String,
+        description: String?,
         maxGuests: Int,
-        bedrooms: Int,
-        beds: Int,
-        bathrooms: Int,
+        monthlyPrice: BigDecimal?,
+        currency: Currency,
+        priceUnit: PriceUnit,
+        roomType: RoomType,
+        bathroomType: BathroomType,
+        airConditioning: Boolean,
+        fan: Boolean,
+        commonAreas: List<String>,
         typeCode: UUID? = null,
         accessibilityCodes: Set<UUID>? = null,
+        sortOrder: Int? = null,
+        occupiedPlaces: Int = 0,
     ) {
-        if (maxGuests <= 0) throw InvalidArgumentException("maxGuests must be positive")
-        if (bedrooms < 0) throw InvalidArgumentException("bedrooms must not be negative")
-        if (beds < 0) throw InvalidArgumentException("beds must not be negative")
-        if (bathrooms < 0) throw InvalidArgumentException("bathrooms must not be negative")
+        if (maxGuests <= 0) throw InvalidArgumentException("La capacidad debe ser al menos 1")
+        if (occupiedPlaces > maxGuests) {
+            throw InvalidArgumentException(
+                "La capacidad no puede ser menor que las plazas ocupadas ($occupiedPlaces)",
+            )
+        }
+        if (monthlyPrice != null && monthlyPrice.signum() <= 0) {
+            throw InvalidArgumentException("El precio mensual debe ser positivo")
+        }
+        if (roomType == RoomType.INDIVIDUAL && maxGuests > 1) {
+            throw InvalidArgumentException("Una habitación individual no puede tener más de una plaza")
+        }
         this.name = name.trim()
+        if (this.name.isBlank()) throw InvalidArgumentException("El nombre es obligatorio")
+        this.description = description?.trim()?.takeIf { it.isNotBlank() }
         this.maxGuests = maxGuests
-        this.bedrooms = bedrooms
-        this.beds = beds
-        this.bathrooms = bathrooms
+        this.monthlyPrice = monthlyPrice
+        this.currency = currency
+        this.priceUnit = if (roomType == RoomType.INDIVIDUAL) PriceUnit.POR_HABITACION else priceUnit
+        this.roomType = roomType
+        this.bathroomType = bathroomType
+        this.airConditioning = airConditioning
+        this.fan = fan
+        this.commonAreas = commonAreas.map { it.trim() }.filter { it.isNotBlank() }.distinct()
         // null keeps the current reference: the update endpoint may only send
         // the fields it wants to change.
         if (typeCode != null) this.typeCode = typeCode
         if (accessibilityCodes != null) this.accessibilityCodes = accessibilityCodes
+        if (sortOrder != null) this.sortOrder = sortOrder
+    }
+
+    /** Free places for the current occupancy, never negative. */
+    fun availablePlaces(occupiedPlaces: Int): Int = (maxGuests - occupiedPlaces).coerceAtLeast(0)
+
+    /** Dedicated mutation for the pricing endpoint, without resending the room. */
+    fun changeMonthlyPrice(
+        monthlyPrice: BigDecimal,
+        currency: Currency,
+        priceUnit: PriceUnit = this.priceUnit,
+    ) {
+        if (monthlyPrice.signum() <= 0) {
+            throw InvalidArgumentException("El precio mensual debe ser positivo")
+        }
+        this.monthlyPrice = monthlyPrice
+        this.currency = currency
+        this.priceUnit = if (roomType == RoomType.INDIVIDUAL) PriceUnit.POR_HABITACION else priceUnit
     }
 
     companion object {
@@ -74,28 +153,54 @@ class Unit(
             id: UUID,
             propertyId: UUID,
             name: String,
+            description: String? = null,
             maxGuests: Int,
-            bedrooms: Int,
-            beds: Int,
-            bathrooms: Int,
+            monthlyPrice: BigDecimal? = null,
+            currency: Currency = Currency.COP,
+            priceUnit: PriceUnit = PriceUnit.POR_HABITACION,
+            roomType: RoomType = RoomType.INDIVIDUAL,
+            bathroomType: BathroomType = BathroomType.COMPARTIDO,
+            airConditioning: Boolean = false,
+            fan: Boolean = false,
+            commonAreas: List<String> = emptyList(),
             typeCode: UUID? = null,
             accessibilityCodes: Set<UUID> = emptySet(),
+            sortOrder: Int = 0,
         ): Unit {
             val unit = Unit(
                 id = id,
                 propertyId = propertyId,
                 name = name,
+                description = description,
                 maxGuests = maxGuests,
-                bedrooms = bedrooms,
-                beds = beds,
-                bathrooms = bathrooms,
+                monthlyPrice = monthlyPrice,
+                currency = currency,
+                priceUnit = priceUnit,
+                roomType = roomType,
+                bathroomType = bathroomType,
+                airConditioning = airConditioning,
+                fan = fan,
+                commonAreas = commonAreas,
                 typeCode = typeCode,
                 accessibilityCodes = accessibilityCodes,
+                sortOrder = sortOrder,
             )
-            unit.update(name, maxGuests, bedrooms, beds, bathrooms)
-            if (unit.name.isBlank()) {
-                throw InvalidArgumentException("name is required")
-            }
+            unit.update(
+                name = name,
+                description = description,
+                maxGuests = maxGuests,
+                monthlyPrice = monthlyPrice,
+                currency = currency,
+                priceUnit = priceUnit,
+                roomType = roomType,
+                bathroomType = bathroomType,
+                airConditioning = airConditioning,
+                fan = fan,
+                commonAreas = commonAreas,
+                typeCode = typeCode,
+                accessibilityCodes = accessibilityCodes,
+                sortOrder = sortOrder,
+            )
             return unit
         }
     }

@@ -8,10 +8,7 @@ import java.time.Instant
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-/**
- * Host asks the guest for additional information before deciding (RF-041).
- * The request stays alive: the host can later accept or reject it.
- */
+/** Host asks the guest for more information before deciding (RF-041). */
 @Service
 class RequestInfoReservationService(
     private val reservationRepository: ReservationRepository,
@@ -23,7 +20,6 @@ class RequestInfoReservationService(
         val now = Instant.now()
         val reservation = createReservationService.loadReservation(command.reservationId)
         createReservationService.requireHostOfUnit(reservation.unitId, command.hostId)
-
         reservation.requestInfo(now)
         reservationRepository.save(reservation)
         createReservationService.recordEvent(
@@ -33,6 +29,9 @@ class RequestInfoReservationService(
             command.reason,
             now,
         )
-        return createReservationService.toView(reservation)
+        return createReservationService.toView(
+            reservation,
+            createReservationService.unitCatalogPort.findBookableUnit(reservation.unitId),
+        )
     }
 }

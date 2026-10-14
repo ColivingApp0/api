@@ -10,17 +10,13 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Pure domain <-> entity mapping, mirroring accommodation's mappers: the
- * domain model is reconstructed through its state-machine entry point
- * (hydration constructor) so no invariant can be bypassed.
+ * Pure domain <-> entity mapping, mirroring accommodation's mappers. Persisted
+ * rows are hydrated through the internal constructor so stored state is kept
+ * exactly (including legacy statuses).
  */
 object BookingMappers {
 
-    fun toDomain(entity: ReservationEntity): Reservation {
-        val reservation = hydrate(entity)
-        // Hold expiry and lifecycle status come straight from storage.
-        return reservation
-    }
+    fun toDomain(entity: ReservationEntity): Reservation = hydrate(entity)
 
     fun toDomainList(entities: List<ReservationEntity>): List<Reservation> = entities.map { toDomain(it) }
 
@@ -30,15 +26,12 @@ object BookingMappers {
             unitId = reservation.unitId,
             publicationId = reservation.publicationId,
             guestUserId = reservation.guestUserId,
-            fromDate = reservation.fromDate,
-            toDate = reservation.toDate,
-            occupants = reservation.occupants,
+            places = reservation.places,
             message = reservation.message,
             status = reservation.status,
-            pricePerNight = reservation.pricePerNight,
+            monthlyPrice = reservation.monthlyPrice,
             currency = reservation.currency,
-            cancellationPolicy = reservation.cancellationPolicy,
-            holdExpiresAt = reservation.holdExpiresAt,
+            priceUnit = reservation.priceUnit,
             createdAt = reservation.createdAt,
             updatedAt = reservation.updatedAt,
         )
@@ -63,59 +56,18 @@ object BookingMappers {
             occurredAt = event.occurredAt,
         )
 
-    /**
-     * Recreates a persisted reservation in exactly the stored state. Uses the
-     * internal constructor so persisted state skips creation validation (e.g.
-     * dates that were valid when created).
-     */
     private fun hydrate(entity: ReservationEntity): Reservation =
-        ReservationInternalFactory.create(
+        Reservation(
             id = entity.id,
             unitId = entity.unitId,
             publicationId = entity.publicationId,
             guestUserId = entity.guestUserId,
-            fromDate = entity.fromDate,
-            toDate = entity.toDate,
-            occupants = entity.occupants,
+            places = entity.places,
             message = entity.message,
             status = entity.status,
-            pricePerNight = entity.pricePerNight,
+            monthlyPrice = entity.monthlyPrice,
             currency = entity.currency,
-            cancellationPolicy = entity.cancellationPolicy,
-            holdExpiresAt = entity.holdExpiresAt,
+            priceUnit = entity.priceUnit,
             createdAt = entity.createdAt,
-            updatedAt = entity.updatedAt,
         )
-}
-
-/**
- * Hydration entry point. Lives outside Reservation to keep the aggregate's
- * public API free of persistence concerns while still reaching the internal
- * constructor.
- */
-object ReservationInternalFactory {
-    fun create(
-        id: UUID,
-        unitId: UUID,
-        publicationId: UUID,
-        guestUserId: UUID,
-        fromDate: java.time.LocalDate,
-        toDate: java.time.LocalDate,
-        occupants: Int,
-        message: String?,
-        status: ReservationStatus,
-        pricePerNight: java.math.BigDecimal,
-        currency: String,
-        cancellationPolicy: com.coliving.api.booking.domain.enums.CancellationPolicyType?,
-        holdExpiresAt: Instant?,
-        createdAt: Instant,
-        updatedAt: Instant,
-    ): Reservation {
-        val reservation = Reservation(
-            id, unitId, publicationId, guestUserId, fromDate, toDate,
-            occupants, message, status, pricePerNight, currency,
-            cancellationPolicy, holdExpiresAt, createdAt,
-        )
-        return reservation
-    }
 }

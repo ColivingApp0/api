@@ -1,21 +1,17 @@
 package com.coliving.api.accommodation.infrastructure.persistence.entity
 
-import com.coliving.api.accommodation.domain.enums.AvailabilityState
-import com.coliving.api.accommodation.domain.enums.CancellationPolicy
+import com.coliving.api.accommodation.domain.enums.BathroomType
 import com.coliving.api.accommodation.domain.enums.Currency
+import com.coliving.api.accommodation.domain.enums.PriceUnit
 import com.coliving.api.accommodation.domain.enums.PublicationStatus
+import com.coliving.api.accommodation.domain.enums.RoomType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
-import jakarta.persistence.PreUpdate
 import jakarta.persistence.Table
 import java.math.BigDecimal
-import java.time.LocalDate
-import java.time.LocalTime
 import java.util.UUID
 
 @Entity
@@ -35,6 +31,12 @@ class PropertyEntity(
 
     @Column(name = "city_id")
     var cityId: UUID?,
+
+    @Column(name = "city_name", length = 120)
+    var cityName: String?,
+
+    @Column(name = "neighborhood", length = 120)
+    var neighborhood: String?,
 
     @Column(name = "address", length = 255)
     var address: String?,
@@ -69,17 +71,50 @@ class UnitEntity(
     @Column(name = "name", nullable = false, length = 100)
     var name: String,
 
+    @Column(name = "description", columnDefinition = "TEXT")
+    var description: String?,
+
     @Column(name = "max_guests", nullable = false)
     var maxGuests: Int,
 
+    @Column(name = "monthly_price", precision = 12, scale = 2)
+    var monthlyPrice: BigDecimal?,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "currency", nullable = false, length = 5)
+    var currency: Currency,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "price_unit", nullable = false, length = 20)
+    var priceUnit: PriceUnit,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "room_type", nullable = false, length = 20)
+    var roomType: RoomType,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "bathroom_type", nullable = false, length = 20)
+    var bathroomType: BathroomType,
+
+    @Column(name = "air_conditioning", nullable = false)
+    var airConditioning: Boolean,
+
+    @Column(name = "fan", nullable = false)
+    var fan: Boolean,
+
+    @Column(name = "common_areas", columnDefinition = "TEXT")
+    var commonAreas: String?,
+
+    // Kept for schema compatibility with the original unit model. Rooms do not
+    // use bedrooms/beds/bathrooms as a business rule anymore.
     @Column(name = "bedrooms", nullable = false)
-    var bedrooms: Int,
+    var bedrooms: Int = 0,
 
     @Column(name = "beds", nullable = false)
-    var beds: Int,
+    var beds: Int = 1,
 
     @Column(name = "bathrooms", nullable = false)
-    var bathrooms: Int,
+    var bathrooms: Int = 1,
 
     // Catalog references (RF-031, RF-083): plain UUIDs, no FK.
     @Column(name = "type_code")
@@ -87,6 +122,9 @@ class UnitEntity(
 
     @Column(name = "accessibility_codes", columnDefinition = "TEXT")
     var accessibilityCodes: String?,
+
+    @Column(name = "sort_order", nullable = false)
+    var sortOrder: Int = 0,
 
     @Column(name = "created_at", nullable = false)
     var createdAt: java.time.Instant,
@@ -144,75 +182,39 @@ class PublicationEntity(
 )
 
 @Entity
-@Table(name = "accommodation_pricing")
-class PricingEntity(
+@Table(name = "accommodation_property_photo")
+class PropertyPhotoEntity(
     @Id @Column(name = "id", nullable = false)
     var id: UUID,
 
-    @Column(name = "publication_id", nullable = false)
-    var publicationId: UUID,
+    @Column(name = "property_id", nullable = false)
+    var propertyId: UUID,
 
-    @Column(name = "base_price_per_night", nullable = false, precision = 12, scale = 2)
-    var basePricePerNight: BigDecimal,
+    @Column(name = "url", nullable = false, length = 1000)
+    var url: String,
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "currency", nullable = false, length = 5)
-    var currency: Currency,
+    @Column(name = "position", nullable = false)
+    var position: Int,
 
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: java.time.Instant,
+    @Column(name = "created_at", nullable = false)
+    var createdAt: java.time.Instant,
 )
 
 @Entity
-@Table(name = "accommodation_rule")
-class RuleEntity(
+@Table(name = "accommodation_unit_photo")
+class UnitPhotoEntity(
     @Id @Column(name = "id", nullable = false)
     var id: UUID,
-
-    @Column(name = "publication_id", nullable = false)
-    var publicationId: UUID,
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "cancellation_policy", nullable = false, length = 50)
-    var cancellationPolicy: CancellationPolicy,
-
-    @Column(name = "check_in_time", nullable = false)
-    var checkInTime: LocalTime,
-
-    @Column(name = "check_out_time", nullable = false)
-    var checkOutTime: LocalTime,
-
-    @Column(name = "min_nights", nullable = false)
-    var minNights: Int,
-
-    @Column(name = "max_nights", nullable = false)
-    var maxNights: Int,
-
-    @Column(name = "house_rules", columnDefinition = "TEXT")
-    var houseRules: String?,
-
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: java.time.Instant,
-)
-
-@Entity
-@Table(name = "accommodation_availability_slot")
-class AvailabilitySlotEntity(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
-    var id: Long = 0L,
 
     @Column(name = "unit_id", nullable = false)
     var unitId: UUID,
 
-    @Column(name = "date", nullable = false)
-    var date: LocalDate,
+    @Column(name = "url", nullable = false, length = 1000)
+    var url: String,
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "state", nullable = false, length = 30)
-    var state: AvailabilityState,
+    @Column(name = "position", nullable = false)
+    var position: Int,
 
-    @Column(name = "reservation_id")
-    var reservationId: UUID?,
+    @Column(name = "created_at", nullable = false)
+    var createdAt: java.time.Instant,
 )

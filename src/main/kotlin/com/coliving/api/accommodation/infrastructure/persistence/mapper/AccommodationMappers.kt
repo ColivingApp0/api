@@ -1,17 +1,15 @@
 package com.coliving.api.accommodation.infrastructure.persistence.mapper
 
-import com.coliving.api.accommodation.domain.model.AvailabilitySlot
-import com.coliving.api.accommodation.domain.model.Pricing
 import com.coliving.api.accommodation.domain.model.Property
+import com.coliving.api.accommodation.domain.model.PropertyPhoto
 import com.coliving.api.accommodation.domain.model.Publication
-import com.coliving.api.accommodation.domain.model.Rule
 import com.coliving.api.accommodation.domain.model.Unit
-import com.coliving.api.accommodation.infrastructure.persistence.entity.AvailabilitySlotEntity
-import com.coliving.api.accommodation.infrastructure.persistence.entity.PricingEntity
+import com.coliving.api.accommodation.domain.model.UnitPhoto
 import com.coliving.api.accommodation.infrastructure.persistence.entity.PropertyEntity
+import com.coliving.api.accommodation.infrastructure.persistence.entity.PropertyPhotoEntity
 import com.coliving.api.accommodation.infrastructure.persistence.entity.PublicationEntity
-import com.coliving.api.accommodation.infrastructure.persistence.entity.RuleEntity
 import com.coliving.api.accommodation.infrastructure.persistence.entity.UnitEntity
+import com.coliving.api.accommodation.infrastructure.persistence.entity.UnitPhotoEntity
 import java.time.Instant
 import java.util.UUID
 
@@ -28,6 +26,8 @@ object AccommodationMappers {
             title = domain.title ?: "",
             description = domain.description,
             cityId = domain.cityId,
+            cityName = domain.cityName,
+            neighborhood = domain.neighborhood,
             address = domain.address,
             amenities = domain.amenities.joinToString(SEPARATOR),
             archived = domain.archived,
@@ -40,23 +40,14 @@ object AccommodationMappers {
         entity.title = domain.title ?: ""
         entity.description = domain.description
         entity.cityId = domain.cityId
+        entity.cityName = domain.cityName
+        entity.neighborhood = domain.neighborhood
         entity.address = domain.address
         entity.amenities = domain.amenities.joinToString(SEPARATOR)
         entity.archived = domain.archived
         entity.updatedAt = Instant.now()
         return entity
     }
-
-    fun toProperty(domain: Property): Property = Property(
-        id = domain.id,
-        hostId = domain.hostId,
-        title = domain.title ?: "",
-        description = domain.description,
-        cityId = domain.cityId,
-        address = domain.address,
-        amenities = domain.amenities.toList(),
-        archived = domain.archived,
-    )
 
     fun toDomainProperty(entity: PropertyEntity): Property =
         Property(
@@ -65,36 +56,52 @@ object AccommodationMappers {
             title = entity.title,
             description = entity.description,
             cityId = entity.cityId,
+            cityName = entity.cityName,
+            neighborhood = entity.neighborhood,
             address = entity.address,
-            amenities = entity.amenities?.split(SEPARATOR).orEmpty(),
+            amenities = entity.amenities?.split(SEPARATOR).orEmpty().filter { it.isNotBlank() },
             archived = entity.archived,
         )
 
-    // ---------- Unit ----------
+    // ---------- Unit (room) ----------
 
     fun toEntity(domain: Unit): UnitEntity =
         UnitEntity(
             id = domain.id,
             propertyId = domain.propertyId,
             name = domain.name,
+            description = domain.description,
             maxGuests = domain.maxGuests,
-            bedrooms = domain.bedrooms,
-            beds = domain.beds,
-            bathrooms = domain.bathrooms,
+            monthlyPrice = domain.monthlyPrice,
+            currency = domain.currency,
+            priceUnit = domain.priceUnit,
+            roomType = domain.roomType,
+            bathroomType = domain.bathroomType,
+            airConditioning = domain.airConditioning,
+            fan = domain.fan,
+            commonAreas = domain.commonAreas.joinToString(SEPARATOR),
             typeCode = domain.typeCode,
             accessibilityCodes = domain.accessibilityCodes.joinToString(SEPARATOR),
+            sortOrder = domain.sortOrder,
             createdAt = Instant.now(),
             updatedAt = Instant.now(),
         )
 
     fun copyInto(entity: UnitEntity, domain: Unit): UnitEntity {
         entity.name = domain.name
+        entity.description = domain.description
         entity.maxGuests = domain.maxGuests
-        entity.bedrooms = domain.bedrooms
-        entity.beds = domain.beds
-        entity.bathrooms = domain.bathrooms
+        entity.monthlyPrice = domain.monthlyPrice
+        entity.currency = domain.currency
+        entity.priceUnit = domain.priceUnit
+        entity.roomType = domain.roomType
+        entity.bathroomType = domain.bathroomType
+        entity.airConditioning = domain.airConditioning
+        entity.fan = domain.fan
+        entity.commonAreas = domain.commonAreas.joinToString(SEPARATOR)
         entity.typeCode = domain.typeCode
         entity.accessibilityCodes = domain.accessibilityCodes.joinToString(SEPARATOR)
+        entity.sortOrder = domain.sortOrder
         entity.updatedAt = Instant.now()
         return entity
     }
@@ -104,13 +111,20 @@ object AccommodationMappers {
             id = entity.id,
             propertyId = entity.propertyId,
             name = entity.name,
+            description = entity.description,
             maxGuests = entity.maxGuests,
-            bedrooms = entity.bedrooms,
-            beds = entity.beds,
-            bathrooms = entity.bathrooms,
+            monthlyPrice = entity.monthlyPrice,
+            currency = entity.currency,
+            priceUnit = entity.priceUnit,
+            roomType = entity.roomType,
+            bathroomType = entity.bathroomType,
+            airConditioning = entity.airConditioning,
+            fan = entity.fan,
+            commonAreas = entity.commonAreas?.split(SEPARATOR).orEmpty().filter { it.isNotBlank() },
             typeCode = entity.typeCode,
             accessibilityCodes = entity.accessibilityCodes?.split(SEPARATOR).orEmpty()
-                .filter { it.isNotBlank() }.map { UUID.fromString(it) }.toSet(),
+                .filter { it.isNotBlank() }.map { UUID.fromString(it.trim()) }.toSet(),
+            sortOrder = entity.sortOrder,
         )
 
     // ---------- Publication ----------
@@ -163,92 +177,34 @@ object AccommodationMappers {
         )
 
     private fun String?.toUuidSet(): Set<UUID> =
-        this?.split(",").orEmpty()
+        this?.split(SEPARATOR).orEmpty()
             .filter { it.isNotBlank() }
             .map { UUID.fromString(it.trim()) }
             .toSet()
 
-    // ---------- Pricing ----------
+    // ---------- Photographs ----------
 
-    fun toEntity(domain: Pricing): PricingEntity =
-        PricingEntity(
-            id = domain.id,
-            publicationId = domain.publicationId,
-            basePricePerNight = domain.basePricePerNight,
-            currency = domain.currency,
-            updatedAt = Instant.now(),
-        )
+    fun toDomainPhoto(entity: PropertyPhotoEntity): PropertyPhoto =
+        PropertyPhoto(entity.id, entity.propertyId, entity.url, entity.position)
 
-    fun copyInto(entity: PricingEntity, domain: Pricing): PricingEntity {
-        entity.basePricePerNight = domain.basePricePerNight
-        entity.currency = domain.currency
-        entity.updatedAt = Instant.now()
+    fun toEntity(photo: PropertyPhoto): PropertyPhotoEntity =
+        PropertyPhotoEntity(photo.id, photo.propertyId, photo.url, photo.position, Instant.now())
+
+    fun copyInto(entity: PropertyPhotoEntity, photo: PropertyPhoto): PropertyPhotoEntity {
+        entity.url = photo.url
+        entity.position = photo.position
         return entity
     }
 
-    fun toDomainPricing(entity: PricingEntity): Pricing =
-        Pricing(
-            id = entity.id,
-            publicationId = entity.publicationId,
-            basePricePerNight = entity.basePricePerNight,
-            currency = entity.currency,
-        )
+    fun toDomainPhoto(entity: UnitPhotoEntity): UnitPhoto =
+        UnitPhoto(entity.id, entity.unitId, entity.url, entity.position)
 
-    // ---------- Rule ----------
+    fun toEntity(photo: UnitPhoto): UnitPhotoEntity =
+        UnitPhotoEntity(photo.id, photo.unitId, photo.url, photo.position, Instant.now())
 
-    fun toEntity(domain: Rule): RuleEntity =
-        RuleEntity(
-            id = domain.id,
-            publicationId = domain.publicationId,
-            cancellationPolicy = domain.cancellationPolicy,
-            checkInTime = domain.checkInTime,
-            checkOutTime = domain.checkOutTime,
-            minNights = domain.minNights,
-            maxNights = domain.maxNights,
-            houseRules = domain.houseRules.joinToString(SEPARATOR),
-            updatedAt = Instant.now(),
-        )
-
-    fun copyInto(entity: RuleEntity, domain: Rule): RuleEntity {
-        entity.cancellationPolicy = domain.cancellationPolicy
-        entity.checkInTime = domain.checkInTime
-        entity.checkOutTime = domain.checkOutTime
-        entity.minNights = domain.minNights
-        entity.maxNights = domain.maxNights
-        entity.houseRules = domain.houseRules.joinToString(SEPARATOR)
-        entity.updatedAt = Instant.now()
+    fun copyInto(entity: UnitPhotoEntity, photo: UnitPhoto): UnitPhotoEntity {
+        entity.url = photo.url
+        entity.position = photo.position
         return entity
     }
-
-    fun toDomainRule(entity: RuleEntity): Rule =
-        Rule(
-            id = entity.id,
-            publicationId = entity.publicationId,
-            cancellationPolicy = entity.cancellationPolicy,
-            checkInTime = entity.checkInTime,
-            checkOutTime = entity.checkOutTime,
-            minNights = entity.minNights,
-            maxNights = entity.maxNights,
-            houseRules = entity.houseRules?.split(SEPARATOR).orEmpty(),
-        )
-
-    // ---------- AvailabilitySlot ----------
-
-    fun toEntity(domain: AvailabilitySlot): AvailabilitySlotEntity =
-        AvailabilitySlotEntity(
-            id = domain.dbId ?: 0L,
-            unitId = domain.unitId,
-            date = domain.date,
-            state = domain.state,
-            reservationId = domain.reservationId,
-        )
-
-    fun toDomainSlot(entity: AvailabilitySlotEntity): AvailabilitySlot =
-        AvailabilitySlot.of(
-            unitId = entity.unitId,
-            date = entity.date,
-            state = entity.state,
-            reservationId = entity.reservationId,
-            dbId = entity.id,
-        )
 }

@@ -1,14 +1,11 @@
 package com.coliving.api.accommodation.domain.enums
 
 /**
- * Lifecycle of a listing (Publication). Only [PUBLICADA] listings are visible
- * to guests. [ARCHIVADA] is terminal.
+ * Lifecycle of a room listing (Publication). Only [PUBLICADA] rooms are
+ * visible to guests and accept requests. [ARCHIVADA] is terminal.
  *
- * [EN_REVISION] is the moderation state (RF-081): a host can send a draft to
- * review before publishing (RF-022 "enviar a revisión") and the moderation
- * team can also take an already published listing into review. Resolution
- * (approve/reject/correction) returns the listing to the state recorded in
- * [Publication.reviewSourceStatus].
+ * [EN_REVISION] is the moderation state (RF-081). PAUSADA is the host's
+ * commercial switch: the room can have free places and still be paused.
  */
 enum class PublicationStatus {
     BORRADOR,
@@ -20,12 +17,7 @@ enum class PublicationStatus {
 }
 
 /**
- * Decisions of the moderation review of a publication (RF-081):
- * - APROBADA: publication is fit to be (or stay) public.
- * - RECHAZADA: content is not acceptable; drafts return to BORRADOR and
- *   published listings are hidden (OCULTA).
- * - CORRECCION_SOLICITADA: the host must correct the listing; always returns
- *   to BORRADOR. A note is mandatory for both non-approval decisions.
+ * Decisions of the moderation review of a publication (RF-081).
  */
 enum class ReviewDecision {
     APROBADA,
@@ -33,32 +25,25 @@ enum class ReviewDecision {
     CORRECCION_SOLICITADA,
 }
 
-/**
- * Per-day availability state of a unit. `DISPONIBLE` is the implicit default:
- * absence of a row means the day is free.
- *
- * - [BLOQUEADO] with a non-null reservation_id: a reservation is being processed.
- * - [BLOQUEADO] with null reservation_id: a host/manual block.
- * - [OCUPADO]: confirmed reservation.
- */
-enum class AvailabilityState {
-    DISPONIBLE,
-    BLOQUEADO,
-    OCUPADO,
+/** Billing unit of the monthly rent. */
+enum class PriceUnit {
+    POR_HABITACION,
+    POR_PERSONA,
 }
 
-/**
- * Cancellation policy options (Rule).
- */
-enum class CancellationPolicy {
-    FLEXIBLE,
-    MODERADA,
-    ESTRICTA,
+/** Whether the room is rented to one guest or shared by several. */
+enum class RoomType {
+    INDIVIDUAL,
+    COMPARTIDA,
 }
 
-/**
- * Supported pricing currencies.
- */
+/** Bathroom available to the room. */
+enum class BathroomType {
+    PRIVADO,
+    COMPARTIDO,
+}
+
+/** Supported pricing currencies. */
 enum class Currency {
     COP,
     USD,

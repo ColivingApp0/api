@@ -52,7 +52,7 @@ class UpdateProfileServiceTest {
     fun `updates an existing profile and preserves academic visibility`() {
         repository.save(
             Profile.createEmpty(userId).apply {
-                configurePrivacy(affinityVisible = true, academicVisible = true)
+                configurePrivacy(affinityVisible = true, academicVisible = true, roommateProfileVisible = false)
             },
         )
 

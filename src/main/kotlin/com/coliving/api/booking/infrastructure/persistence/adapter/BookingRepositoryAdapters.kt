@@ -2,13 +2,13 @@ package com.coliving.api.booking.infrastructure.persistence.adapter
 
 import com.coliving.api.booking.domain.model.Reservation
 import com.coliving.api.booking.domain.model.ReservationEvent
+import com.coliving.api.booking.domain.repository.ACTIVE_STATUSES
+import com.coliving.api.booking.domain.repository.OCCUPYING_STATUSES
 import com.coliving.api.booking.domain.repository.ReservationEventRepository
 import com.coliving.api.booking.domain.repository.ReservationRepository
 import com.coliving.api.booking.infrastructure.persistence.mapper.BookingMappers
 import com.coliving.api.booking.infrastructure.persistence.repository.ReservationEventJpaRepository
 import com.coliving.api.booking.infrastructure.persistence.repository.ReservationJpaRepository
-import com.coliving.api.booking.domain.enums.ReservationStatus
-import java.time.Instant
 import java.util.UUID
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
@@ -37,10 +37,17 @@ class ReservationRepositoryAdapter(
             BookingMappers.toDomainList(jpaRepository.findByUnitIdInOrderByCreatedAtDesc(unitIds))
         }
 
-    override fun findExpiredHolds(now: Instant): List<Reservation> =
-        BookingMappers.toDomainList(
-            jpaRepository.findByStatusAndHoldExpiresAtBefore(ReservationStatus.ACEPTADA, now),
-        )
+    override fun occupiedPlacesOf(unitIds: Collection<UUID>): Map<UUID, Int> {
+        if (unitIds.isEmpty()) return emptyMap()
+        return jpaRepository.occupiedPlacesByUnit(unitIds, OCCUPYING_STATUSES)
+            .associate { row -> (row[0] as UUID) to (row[1] as Number).toInt() }
+    }
+
+    override fun residentIdsOf(unitId: UUID): List<UUID> =
+        jpaRepository.residentIds(unitId, OCCUPYING_STATUSES)
+
+    override fun hasActiveRequest(guestUserId: UUID, unitId: UUID): Boolean =
+        jpaRepository.existsByGuestUserIdAndUnitIdAndStatusIn(guestUserId, unitId, ACTIVE_STATUSES)
 }
 
 @Component
