@@ -6,60 +6,82 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Conversation between the two parties of a reservation (RF-050): the guest
- * who requested the stay and the host who owns the unit. There is at most one
- * conversation per reservation — reopening it returns the existing thread
- * instead of creating a second one.
- *
- * The parties are copied from `booking` (through ReservationPartiesPort) at
- * creation time, so authorization inside this context needs no cross-context
- * call: [isParticipant] answers from local state.
+ * Conversation between a guest and a host (RF-050). It can be attached to a
+ * reservation or opened directly about a room listing (before requesting a
+ * place). The parties are copied at creation time, so authorization needs no
+ * cross-context call.
  */
 class Conversation(
     val id: UUID,
-    val reservationId: UUID,
+    val reservationId: UUID?,
+    val unitId: UUID?,
+    val publicationId: UUID?,
+    val subject: String?,
     val guestUserId: UUID,
     val hostUserId: UUID,
     val createdAt: Instant,
 ) {
 
-    /** Whether [userId] is allowed to read or write in this conversation. */
     fun isParticipant(userId: UUID): Boolean =
         userId == guestUserId || userId == hostUserId
 
-    /**
-     * The other party — the recipient of a notification for a message sent by
-     * [senderId] (RF-051).
-     */
     fun counterpartOf(senderId: UUID): UUID = when (senderId) {
         guestUserId -> hostUserId
         hostUserId -> guestUserId
-        else -> throw ForbiddenException("Not a party of this conversation")
+        else -> throw ForbiddenException("No eres parte de esta conversación")
     }
 
-    /** Fails unless [userId] is one of the two parties. */
     fun requireParticipant(userId: UUID) {
         if (!isParticipant(userId)) {
-            throw ForbiddenException("Not a party of this conversation")
+            throw ForbiddenException("No eres parte de esta conversación")
         }
     }
 
     companion object {
-        fun start(
+        fun forReservation(
             id: UUID,
             reservationId: UUID,
+            unitId: UUID?,
+            publicationId: UUID?,
+            subject: String?,
+            guestUserId: UUID,
+            hostUserId: UUID,
+            now: Instant,
+        ): Conversation = build(
+            id, reservationId, unitId, publicationId, subject, guestUserId, hostUserId, now,
+        )
+
+        fun forListing(
+            id: UUID,
+            unitId: UUID,
+            publicationId: UUID,
+            subject: String,
+            guestUserId: UUID,
+            hostUserId: UUID,
+            now: Instant,
+        ): Conversation = build(
+            id, null, unitId, publicationId, subject, guestUserId, hostUserId, now,
+        )
+
+        private fun build(
+            id: UUID,
+            reservationId: UUID?,
+            unitId: UUID?,
+            publicationId: UUID?,
+            subject: String?,
             guestUserId: UUID,
             hostUserId: UUID,
             now: Instant,
         ): Conversation {
             if (guestUserId == hostUserId) {
-                throw ConflictException(
-                    "A conversation needs two distinct parties",
-                )
+                throw ConflictException("Una conversación necesita dos participantes distintos")
             }
             return Conversation(
                 id = id,
                 reservationId = reservationId,
+                unitId = unitId,
+                publicationId = publicationId,
+                subject = subject?.trim()?.takeIf { it.isNotBlank() },
                 guestUserId = guestUserId,
                 hostUserId = hostUserId,
                 createdAt = now,

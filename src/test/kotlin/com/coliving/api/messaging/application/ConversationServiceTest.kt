@@ -17,7 +17,8 @@ class ConversationServiceTest {
     private val conversations = FakeConversationRepository()
     private val messages = FakeMessageRepository()
     private val parties = FakeReservationPartiesPort()
-    private val service = ConversationService(conversations, messages, parties)
+    private val listings = FakeListingContactPort()
+    private val service = ConversationService(conversations, messages, parties, listings)
 
     private val guestId = UUID.randomUUID()
     private val hostId = UUID.randomUUID()
@@ -32,8 +33,8 @@ class ConversationServiceTest {
     fun `guest and host land on the same thread (RF-050)`() {
         val reservationId = reservation()
 
-        val byGuest = service.open(OpenConversationCommand(reservationId, guestId))
-        val byHost = service.open(OpenConversationCommand(reservationId, hostId))
+        val byGuest = service.open(OpenConversationCommand(reservationId = reservationId, actorId = guestId))
+        val byHost = service.open(OpenConversationCommand(reservationId = reservationId, actorId = hostId))
 
         assertEquals(byGuest.conversation.id, byHost.conversation.id)
         assertEquals(1, conversations.store.size)
@@ -44,10 +45,10 @@ class ConversationServiceTest {
     @Test
     fun `the detail read carries the stay dates and the messages (RF-050)`() {
         val reservationId = reservation()
-        val detail = service.open(OpenConversationCommand(reservationId, guestId))
+        val detail = service.open(OpenConversationCommand(reservationId = reservationId, actorId = guestId))
 
-        assertEquals(reservationId, detail.stay.reservationId)
-        assertEquals(parties.parties.getValue(reservationId).fromDate, detail.stay.fromDate)
+        assertEquals(reservationId, detail.listing.reservationId)
+        assertEquals(parties.parties.getValue(reservationId).unitId, detail.listing.unitId)
 
         // Stored out of order on purpose: the read sorts by send time.
         val base = Instant.parse("2026-09-08T14:00:00Z")
@@ -65,7 +66,7 @@ class ConversationServiceTest {
     @Test
     fun `threads are listed for both sides only (RF-050)`() {
         val reservationId = reservation()
-        service.open(OpenConversationCommand(reservationId, guestId))
+        service.open(OpenConversationCommand(reservationId = reservationId, actorId = guestId))
 
         assertEquals(1, service.listMine(guestId).size)
         assertEquals(1, service.listMine(hostId).size)
@@ -75,7 +76,7 @@ class ConversationServiceTest {
     @Test
     fun `rejects opening a conversation of an unknown reservation`() {
         assertFailsWith<NotFoundException> {
-            service.open(OpenConversationCommand(UUID.randomUUID(), guestId))
+            service.open(OpenConversationCommand(reservationId = UUID.randomUUID(), actorId = guestId))
         }
     }
 
@@ -84,7 +85,7 @@ class ConversationServiceTest {
         val reservationId = reservation()
 
         assertFailsWith<ForbiddenException> {
-            service.open(OpenConversationCommand(reservationId, UUID.randomUUID()))
+            service.open(OpenConversationCommand(reservationId = reservationId, actorId = UUID.randomUUID()))
         }
         assertEquals(0, conversations.store.size)
     }
@@ -92,7 +93,7 @@ class ConversationServiceTest {
     @Test
     fun `rejects reading a thread the user is not part of`() {
         val reservationId = reservation()
-        val detail = service.open(OpenConversationCommand(reservationId, guestId))
+        val detail = service.open(OpenConversationCommand(reservationId = reservationId, actorId = guestId))
 
         assertFailsWith<ForbiddenException> { service.get(detail.conversation.id, UUID.randomUUID()) }
         assertFailsWith<NotFoundException> { service.get(UUID.randomUUID(), guestId) }

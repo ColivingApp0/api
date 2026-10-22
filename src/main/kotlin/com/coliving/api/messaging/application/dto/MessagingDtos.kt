@@ -2,7 +2,6 @@ package com.coliving.api.messaging.application.dto
 
 import com.coliving.api.messaging.domain.enums.NotificationType
 import java.time.Instant
-import java.time.LocalDate
 import java.util.UUID
 
 /** A message as returned to clients. The sender is always identified (RF-050). */
@@ -14,57 +13,59 @@ data class MessageView(
     val sentAt: Instant,
 )
 
-/**
- * Thread summary: the reservation it belongs to, both parties and its last
- * activity. It carries no stay dates on purpose — listing the threads of a user
- * must not reach into `booking`; the detail read adds them as
- * [ReservationStayView].
- */
+/** Thread summary with its listing/reservation context. */
 data class ConversationView(
     val id: UUID,
-    val reservationId: UUID,
+    val reservationId: UUID?,
+    val unitId: UUID?,
+    val publicationId: UUID?,
+    val subject: String?,
     val guestUserId: UUID,
     val hostUserId: UUID,
     val createdAt: Instant,
     val lastMessageAt: Instant?,
     val messageCount: Int,
+    val roomTitle: String? = null,
+    val propertyTitle: String? = null,
+    val cityName: String? = null,
 )
 
-/** Stay header of a thread, resolved from `booking` on the detail read (RF-050). */
-data class ReservationStayView(
-    val reservationId: UUID,
-    val fromDate: LocalDate,
-    val toDate: LocalDate,
+/** Room header of a thread, resolved from accommodation on the read. */
+data class ListingContextView(
+    val unitId: UUID?,
+    val publicationId: UUID?,
+    val roomTitle: String?,
+    val propertyTitle: String?,
+    val cityName: String?,
+    val reservationId: UUID?,
 )
 
 /** Conversation plus its messages in chronological order (RF-050). */
 data class ConversationDetailView(
     val conversation: ConversationView,
-    val stay: ReservationStayView,
+    val listing: ListingContextView,
     val messages: List<MessageView>,
 )
 
-/** Command to open (or reopen) the conversation attached to a reservation. */
+/** Opens (or reopens) a conversation about a reservation or a room listing. */
 data class OpenConversationCommand(
-    val reservationId: UUID,
     val actorId: UUID,
+    val reservationId: UUID? = null,
+    val unitId: UUID? = null,
 )
 
-/** Command to post a message inside a conversation. */
 data class SendMessageCommand(
     val conversationId: UUID,
     val senderUserId: UUID,
     val body: String,
 )
 
-/** Command to post a message straight into a reservation's conversation. */
 data class SendMessageToReservationCommand(
     val reservationId: UUID,
     val senderUserId: UUID,
     val body: String,
 )
 
-/** In-app notification of the authenticated user (RF-051). */
 data class NotificationView(
     val id: UUID,
     val type: NotificationType,
@@ -75,19 +76,16 @@ data class NotificationView(
     val unread: Boolean,
 )
 
-/** User inbox plus the unread counter that feeds the app badge (RF-051). */
 data class NotificationInboxView(
     val unreadCount: Int,
     val notifications: List<NotificationView>,
 )
 
-/** A block raised by the authenticated user (RF-053). */
 data class BlockView(
     val blockedUserId: UUID,
     val createdAt: Instant,
 )
 
-/** Report of a conversation with its moderation case reference (RF-052). */
 data class ConversationReportView(
     val id: UUID,
     val conversationId: UUID,
@@ -97,10 +95,8 @@ data class ConversationReportView(
     val createdAt: Instant,
 )
 
-/** Command to report a conversation (RF-052). */
 data class ReportConversationCommand(
     val conversationId: UUID,
     val reporterUserId: UUID,
     val reason: String,
 )
-

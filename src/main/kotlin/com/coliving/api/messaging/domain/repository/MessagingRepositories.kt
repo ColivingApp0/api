@@ -4,6 +4,7 @@ import com.coliving.api.messaging.domain.model.Conversation
 import com.coliving.api.messaging.domain.model.ConversationReport
 import com.coliving.api.messaging.domain.model.Message
 import com.coliving.api.messaging.domain.model.Notification
+import com.coliving.api.messaging.domain.model.PushToken
 import com.coliving.api.messaging.domain.model.UserBlock
 import java.util.UUID
 
@@ -12,6 +13,9 @@ interface ConversationRepository {
 
     /** The single conversation of a reservation, if it was already opened. */
     fun findByReservation(reservationId: UUID): Conversation?
+
+    /** The direct conversation between a guest and a room listing, if any. */
+    fun findByListingAndGuest(unitId: UUID, guestUserId: UUID): Conversation?
 
     /** Conversations where the user is guest or host, newest first. */
     fun findByParticipant(userId: UUID): List<Conversation>
@@ -62,11 +66,22 @@ interface UserBlockRepository {
 
 /** Conversation reports (RF-052), with their moderation case reference. */
 interface ConversationReportRepository {
-
     /** Reports raised by a user, newest first. */
     fun findByReporter(reporterUserId: UUID): List<ConversationReport>
 
     fun findByConversationAndReporter(conversationId: UUID, reporterUserId: UUID): ConversationReport?
 
     fun save(report: ConversationReport)
+}
+
+/** FCM registration tokens per user (RF-051 external push channel). */
+interface PushTokenRepository {
+
+    fun findByUser(userId: UUID): List<PushToken>
+
+    fun findByToken(token: String): PushToken?
+
+    fun save(token: PushToken)
+
+    fun delete(token: PushToken)
 }

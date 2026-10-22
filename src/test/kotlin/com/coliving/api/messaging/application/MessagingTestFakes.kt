@@ -1,20 +1,27 @@
 package com.coliving.api.messaging.application
 
 import com.coliving.api.messaging.application.port.out.ReportCasePort
+import com.coliving.api.messaging.application.port.out.PushSender
+import com.coliving.api.messaging.application.port.out.RecipientContact
+import com.coliving.api.messaging.application.port.out.RecipientContactPort
+import com.coliving.api.messaging.application.port.out.ListingContact
+import com.coliving.api.messaging.application.port.out.ListingContactPort
 import com.coliving.api.messaging.application.port.out.ReservationParties
 import com.coliving.api.messaging.application.port.out.ReservationPartiesPort
 import com.coliving.api.messaging.domain.model.Conversation
 import com.coliving.api.messaging.domain.model.ConversationReport
 import com.coliving.api.messaging.domain.model.Message
 import com.coliving.api.messaging.domain.model.Notification
+import com.coliving.api.messaging.domain.model.PushToken
 import com.coliving.api.messaging.domain.model.UserBlock
 import com.coliving.api.messaging.domain.repository.ConversationReportRepository
 import com.coliving.api.messaging.domain.repository.ConversationRepository
 import com.coliving.api.messaging.domain.repository.MessageRepository
 import com.coliving.api.messaging.domain.repository.NotificationRepository
+import com.coliving.api.messaging.domain.repository.PushTokenRepository
 import com.coliving.api.messaging.domain.repository.UserBlockRepository
-import java.time.LocalDate
 import java.util.UUID
+import org.springframework.context.ApplicationEventPublisher
 
 /** In-memory stand-in of booking's ReservationMessagingQuery (RF-050). */
 class FakeReservationPartiesPort : ReservationPartiesPort {
@@ -26,15 +33,15 @@ class FakeReservationPartiesPort : ReservationPartiesPort {
         reservationId: UUID = UUID.randomUUID(),
         guestUserId: UUID,
         hostUserId: UUID,
-        fromDate: LocalDate = LocalDate.now().plusDays(10),
-        toDate: LocalDate = LocalDate.now().plusDays(14),
+        unitId: UUID = UUID.randomUUID(),
+        publicationId: UUID = UUID.randomUUID(),
     ): ReservationParties {
         val value = ReservationParties(
             reservationId = reservationId,
+            unitId = unitId,
+            publicationId = publicationId,
             guestUserId = guestUserId,
             hostUserId = hostUserId,
-            fromDate = fromDate,
-            toDate = toDate,
         )
         parties[reservationId] = value
         return value
@@ -48,6 +55,11 @@ class FakeConversationRepository : ConversationRepository {
 
     override fun findByReservation(reservationId: UUID): Conversation? =
         store.values.firstOrNull { it.reservationId == reservationId }
+
+    override fun findByListingAndGuest(unitId: UUID, guestUserId: UUID): Conversation? =
+        store.values.firstOrNull {
+            it.unitId == unitId && it.guestUserId == guestUserId && it.reservationId == null
+        }
 
     override fun findByParticipant(userId: UUID): List<Conversation> =
         store.values
@@ -92,8 +104,7 @@ class FakeNotificationRepository : NotificationRepository {
     }
 }
 
-class FakeUserBlockRepository : UserBlockRepository {
-    val store = mutableMapOf<UUID, UserBlock>()
+class FakeUserBlockRepository : UserBlockRepository {    val store = mutableMapOf<UUID, UserBlock>()
 
     override fun existsBetween(userA: UUID, userB: UUID): Boolean =
         store.values.any {
@@ -144,4 +155,64 @@ class FakeReportCasePort : ReportCasePort {
         reporterUserId: UUID,
         reason: String,
     ): UUID = UUID.randomUUID().also { openedCases.add(it) }
+}
+
+class FakePushTokenRepository : PushTokenRepository {
+    val store = mutableMapOf<String, PushToken>()
+
+    override fun findByUser(userId: UUID): List<PushToken> =
+        store.values.filter { it.userId == userId }
+
+    override fun findByToken(token: String): PushToken? = store[token]
+
+    override fun save(token: PushToken) {
+        store[token.token] = token
+    }
+
+    override fun delete(token: PushToken) {
+        store.remove(token.token)
+    }
+}
+
+class FakePushSender : PushSender {
+    val sent = mutableListOf<Pair<UUID, UUID>>()
+
+    override fun sendNewMessage(userId: UUID, conversationId: UUID) {
+        sent.add(userId to conversationId)
+    }
+}
+
+class FakeApplicationEventPublisher : ApplicationEventPublisher {
+    val published = mutableListOf<Any>()
+
+    override fun publishEvent(event: Any) {
+        published.add(event)
+    }
+}
+
+class FakeRecipientContactPort : RecipientContactPort {
+    val contacts = mutableMapOf<UUID, RecipientContact>()
+
+    override fun contactOf(userId: UUID): RecipientContact? = contacts[userId]
+}
+
+
+/** In-memory stand-in of accommodation's listing contact query. */
+class FakeListingContactPort : ListingContactPort {
+    val listings = mutableMapOf<UUID, ListingContact>()
+
+    override fun findListing(unitId: UUID): ListingContact? = listings[unitId]
+
+    fun add(
+        unitId: UUID = UUID.randomUUID(),
+        publicationId: UUID = UUID.randomUUID(),
+        hostId: UUID,
+        roomTitle: String = "Habitación privada",
+        propertyTitle: String = "Casa compartida",
+        cityName: String = "Bogotá",
+    ): ListingContact {
+        val value = ListingContact(unitId, publicationId, hostId, roomTitle, propertyTitle, cityName)
+        listings[unitId] = value
+        return value
+    }
 }

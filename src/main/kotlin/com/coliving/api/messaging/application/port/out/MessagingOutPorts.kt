@@ -1,36 +1,34 @@
 package com.coliving.api.messaging.application.port.out
 
-import java.time.LocalDate
 import java.util.UUID
 
-/**
- * Parties of a reservation as read from `booking` (see
- * ReservationMessagingQuery). Kept as a local projection so messaging does not
- * depend on booking's DTOs, mirroring accommodation's BookableUnit.
- */
+/** Parties of a reservation as read from `booking`. */
 data class ReservationParties(
     val reservationId: UUID,
+    val unitId: UUID,
+    val publicationId: UUID,
     val guestUserId: UUID,
     val hostUserId: UUID,
-    val fromDate: LocalDate,
-    val toDate: LocalDate,
 )
 
-/**
- * Reservation read contract consumed from `booking` (RF-050): who may
- * converse inside a reservation. Implemented by an adapter delegating to
- * booking's ReservationMessagingQuery.
- */
 interface ReservationPartiesPort {
-
     fun findParties(reservationId: UUID): ReservationParties?
 }
 
-/**
- * Case intake consumed from `moderation` (RF-052: reportar una conversación
- * genera un caso de soporte). Implemented by an adapter delegating to
- * moderation's CaseIntake; the returned id is stored with the report.
- */
+/** Room context as read from `accommodation` for listing conversations. */
+data class ListingContact(
+    val unitId: UUID,
+    val publicationId: UUID,
+    val hostId: UUID,
+    val roomTitle: String,
+    val propertyTitle: String,
+    val cityName: String?,
+)
+
+interface ListingContactPort {
+    fun findListing(unitId: UUID): ListingContact?
+}
+
 interface ReportCasePort {
 
     fun openConversationReportCase(
@@ -39,4 +37,17 @@ interface ReportCasePort {
         reporterUserId: UUID,
         reason: String,
     ): UUID
+}
+
+data class RecipientContact(
+    val userId: UUID,
+    val email: String,
+)
+
+interface RecipientContactPort {
+    fun contactOf(userId: UUID): RecipientContact?
+}
+
+interface PushSender {
+    fun sendNewMessage(userId: UUID, conversationId: UUID)
 }
