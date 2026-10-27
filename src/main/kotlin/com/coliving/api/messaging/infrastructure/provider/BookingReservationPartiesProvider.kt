@@ -6,11 +6,7 @@ import com.coliving.api.messaging.application.port.out.ReservationPartiesPort
 import java.util.UUID
 import org.springframework.stereotype.Component
 
-/**
- * Adapter over booking's [ReservationMessagingQuery]: messaging resolves the two
- * conversation parties (and the stay dates shown in the thread header) without
- * owning or reading reservation data.
- */
+/** Adapter over booking's ReservationMessagingQuery. */
 @Component
 class BookingReservationPartiesProvider(
     private val reservationMessagingQuery: ReservationMessagingQuery,
@@ -20,10 +16,10 @@ class BookingReservationPartiesProvider(
         reservationMessagingQuery.partiesOf(reservationId)?.let {
             ReservationParties(
                 reservationId = it.reservationId,
+                unitId = it.unitId,
+                publicationId = it.publicationId,
                 guestUserId = it.guestUserId,
                 hostUserId = it.hostUserId,
-                fromDate = it.fromDate,
-                toDate = it.toDate,
             )
         }
 }

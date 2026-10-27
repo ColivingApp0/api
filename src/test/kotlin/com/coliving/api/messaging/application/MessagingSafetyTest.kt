@@ -27,8 +27,9 @@ class MessagingSafetyTest {
     private val reports = FakeConversationReportRepository()
     private val reportCases = FakeReportCasePort()
     private val parties = FakeReservationPartiesPort()
-    private val conversationService = ConversationService(conversations, messages, parties)
-    private val messageService = MessageService(conversations, messages, notifications, conversationService, blocks)
+    private val listings = FakeListingContactPort()
+    private val conversationService = ConversationService(conversations, messages, parties, listings)
+    private val messageService = MessageService(conversations, messages, notifications, conversationService, blocks, FakeApplicationEventPublisher())
     private val blockService = BlockService(blocks)
     private val reportService = ReportService(conversations, reports, reportCases)
 
@@ -38,7 +39,7 @@ class MessagingSafetyTest {
     private fun openConversation(): UUID {
         val reservationId = UUID.randomUUID()
         parties.add(reservationId = reservationId, guestUserId = guestId, hostUserId = hostId)
-        return conversationService.open(OpenConversationCommand(reservationId, guestId)).conversation.id
+        return conversationService.open(OpenConversationCommand(reservationId = reservationId, actorId = guestId)).conversation.id
     }
 
     @Test

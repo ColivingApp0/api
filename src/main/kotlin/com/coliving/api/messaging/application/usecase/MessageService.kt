@@ -4,6 +4,7 @@ import com.coliving.api.messaging.application.dto.MessageView
 import com.coliving.api.messaging.application.dto.OpenConversationCommand
 import com.coliving.api.messaging.application.dto.SendMessageCommand
 import com.coliving.api.messaging.application.dto.SendMessageToReservationCommand
+import com.coliving.api.messaging.application.event.NewMessageEvent
 import com.coliving.api.messaging.domain.model.Conversation
 import com.coliving.api.messaging.domain.model.Message
 import com.coliving.api.messaging.domain.model.Notification
@@ -15,6 +16,7 @@ import com.coliving.api.shared.error.ForbiddenException
 import com.coliving.api.shared.error.NotFoundException
 import java.time.Instant
 import java.util.UUID
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -31,6 +33,7 @@ class MessageService(
     private val notificationRepository: NotificationRepository,
     private val conversationService: ConversationService,
     private val userBlockRepository: UserBlockRepository,
+    private val events: ApplicationEventPublisher,
 ) {
 
     @Transactional
@@ -83,6 +86,8 @@ class MessageService(
                 now = now,
             ),
         )
+        // External channels (e-mail/FCM) run after commit in the listener.
+        events.publishEvent(NewMessageEvent(recipientId, conversation.id))
         return message.toView()
     }
 }

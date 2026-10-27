@@ -18,8 +18,44 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 12MB
+  # SMTP transport for app.mail.provider=smtp. The defaults target Google
+  # Workspace / Gmail; override them for any other relay.
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
 server:
   port: 8080
+
+# Outbound e-mail and push (RF-001, RF-003, RF-051).
+# `log` keeps local development self-contained (tokens remain in the API log);
+# production selects `mailtrap` (official SDK), `smtp` (Google Workspace / any
+# relay) or `firebase` (Firestore + Trigger Email extension). Push uses FCM
+# through Firebase Admin.
+app:
+  mail:
+    provider: ${MAIL_PROVIDER:log}
+    from: ${MAIL_FROM:no-reply@coliving.local}
+    from-name: ${MAIL_FROM_NAME:ColivinApp}
+    public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:4200}
+    verification-path: /verificar-correo
+    reset-path: /restablecer-password
+    firebase-collection: ${MAIL_FIREBASE_COLLECTION:mail}
+    message-notifications-enabled: ${MAIL_MESSAGE_NOTIFICATIONS:true}
+    mailtrap:
+      token: ${MAILTRAP_TOKEN:}
+      sandbox: ${MAILTRAP_SANDBOX:false}
+      inbox-id: ${MAILTRAP_INBOX_ID:}
+  push:
+    enabled: ${PUSH_ENABLED:false}
+  firebase:
+    enabled: ${FIREBASE_ENABLED:false}
+    project-id: ${FIREBASE_PROJECT_ID:}
+    credentials-path: ${FIREBASE_CREDENTIALS:}
 
 # API documentation (springdoc-openapi): Swagger UI at /swagger-ui.html and the
 # OpenAPI 3 document at /v3/api-docs (also /v3/api-docs.yaml). The document is

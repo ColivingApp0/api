@@ -9,3 +9,10 @@ enum class NotificationType {
     /** The counterpart wrote inside a reservation conversation (RF-050). */
     MENSAJE_NUEVO,
 }
+
+/** Client platform that registered an FCM device token (RF-051 external push). */
+enum class PushPlatform {
+    WEB,
+    ANDROID,
+    IOS,
+}

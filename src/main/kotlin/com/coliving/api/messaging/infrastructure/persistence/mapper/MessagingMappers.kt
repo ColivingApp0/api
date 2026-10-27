@@ -4,12 +4,14 @@ import com.coliving.api.messaging.domain.model.Conversation
 import com.coliving.api.messaging.domain.model.ConversationReport
 import com.coliving.api.messaging.domain.model.Message
 import com.coliving.api.messaging.domain.model.Notification
+import com.coliving.api.messaging.domain.model.PushToken
 import com.coliving.api.messaging.domain.model.UserBlock
 import com.coliving.api.messaging.infrastructure.persistence.entity.ConversationBlockEntity
 import com.coliving.api.messaging.infrastructure.persistence.entity.ConversationEntity
 import com.coliving.api.messaging.infrastructure.persistence.entity.ConversationReportEntity
 import com.coliving.api.messaging.infrastructure.persistence.entity.MessageEntity
 import com.coliving.api.messaging.infrastructure.persistence.entity.NotificationEntity
+import com.coliving.api.messaging.infrastructure.persistence.entity.PushTokenEntity
 
 /**
  * Pure domain <-> entity mapping, mirroring booking's mappers: models are plain
@@ -22,6 +24,9 @@ object MessagingMappers {
         Conversation(
             id = entity.id,
             reservationId = entity.reservationId,
+            unitId = entity.unitId,
+            publicationId = entity.publicationId,
+            subject = entity.subject,
             guestUserId = entity.guestUserId,
             hostUserId = entity.hostUserId,
             createdAt = entity.createdAt,
@@ -31,6 +36,9 @@ object MessagingMappers {
         ConversationEntity(
             id = conversation.id,
             reservationId = conversation.reservationId,
+            unitId = conversation.unitId,
+            publicationId = conversation.publicationId,
+            subject = conversation.subject,
             guestUserId = conversation.guestUserId,
             hostUserId = conversation.hostUserId,
             createdAt = conversation.createdAt,
@@ -117,4 +125,24 @@ object MessagingMappers {
 
     fun toReportList(entities: List<ConversationReportEntity>): List<ConversationReport> =
         entities.map { toDomain(it) }
+
+    fun toDomain(entity: PushTokenEntity): PushToken =
+        PushToken(
+            id = entity.id,
+            userId = entity.userId,
+            token = entity.token,
+            platform = entity.platform,
+            createdAt = entity.createdAt,
+            lastSeenAt = entity.lastSeenAt,
+        )
+
+    fun toEntity(token: PushToken): PushTokenEntity =
+        PushTokenEntity(
+            id = token.id,
+            userId = token.userId,
+            token = token.token,
+            platform = token.platform,
+            createdAt = token.createdAt,
+            lastSeenAt = token.lastSeenAt,
+        )
 }

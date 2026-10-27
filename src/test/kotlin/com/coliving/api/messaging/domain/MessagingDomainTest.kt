@@ -23,9 +23,12 @@ class MessagingDomainTest {
     private val now = Instant.parse("2026-09-08T14:00:00Z")
 
     private fun conversation(): Conversation =
-        Conversation.start(
+        Conversation.forReservation(
             id = UUID.randomUUID(),
             reservationId = UUID.randomUUID(),
+            unitId = UUID.randomUUID(),
+            publicationId = UUID.randomUUID(),
+            subject = null,
             guestUserId = guestId,
             hostUserId = hostId,
             now = now,
@@ -34,7 +37,7 @@ class MessagingDomainTest {
     @Test
     fun `a conversation needs two distinct parties`() {
         assertFailsWith<ConflictException> {
-            Conversation.start(UUID.randomUUID(), UUID.randomUUID(), guestId, guestId, now)
+            Conversation.forReservation(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null, guestId, guestId, now)
         }
     }
 

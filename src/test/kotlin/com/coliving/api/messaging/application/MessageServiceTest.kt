@@ -3,6 +3,7 @@ package com.coliving.api.messaging.application
 import com.coliving.api.messaging.application.dto.OpenConversationCommand
 import com.coliving.api.messaging.application.dto.SendMessageCommand
 import com.coliving.api.messaging.application.dto.SendMessageToReservationCommand
+import com.coliving.api.messaging.application.event.NewMessageEvent
 import com.coliving.api.messaging.application.usecase.ConversationService
 import com.coliving.api.messaging.application.usecase.MessageService
 import com.coliving.api.messaging.domain.enums.NotificationType
@@ -21,8 +22,10 @@ class MessageServiceTest {
     private val notifications = FakeNotificationRepository()
     private val blocks = FakeUserBlockRepository()
     private val parties = FakeReservationPartiesPort()
-    private val conversationService = ConversationService(conversations, messages, parties)
-    private val service = MessageService(conversations, messages, notifications, conversationService, blocks)
+    private val listings = FakeListingContactPort()
+    private val conversationService = ConversationService(conversations, messages, parties, listings)
+    private val events = FakeApplicationEventPublisher()
+    private val service = MessageService(conversations, messages, notifications, conversationService, blocks, events)
 
     private val guestId = UUID.randomUUID()
     private val hostId = UUID.randomUUID()
@@ -30,7 +33,7 @@ class MessageServiceTest {
     private fun openConversation(): UUID {
         val reservationId = UUID.randomUUID()
         parties.add(reservationId = reservationId, guestUserId = guestId, hostUserId = hostId)
-        return conversationService.open(OpenConversationCommand(reservationId, guestId)).conversation.id
+        return conversationService.open(OpenConversationCommand(reservationId = reservationId, actorId = guestId)).conversation.id
     }
 
     @Test
@@ -60,6 +63,17 @@ class MessageServiceTest {
 
         service.send(SendMessageCommand(conversationId, hostId, "respuesta"))
         assertEquals(1, notifications.findByUser(guestId).size)
+    }
+
+    @Test
+    fun `publishes the event that fans out to the external channels`() {
+        val conversationId = openConversation()
+
+        service.send(SendMessageCommand(conversationId, guestId, "hola"))
+
+        val event = events.published.filterIsInstance<NewMessageEvent>().single()
+        assertEquals(hostId, event.recipientUserId)
+        assertEquals(conversationId, event.conversationId)
     }
 
     @Test
