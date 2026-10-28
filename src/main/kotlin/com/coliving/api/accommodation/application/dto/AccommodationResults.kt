@@ -18,6 +18,18 @@ data class PropertyView(
     val address: String?,
     val amenities: List<String>,
     val archived: Boolean,
+    val images: List<PropertyImageView> = emptyList(),
+)
+
+data class PropertyImageView(
+    val id: UUID,
+    val propertyId: UUID,
+    val originalFilename: String,
+    val contentType: String,
+    val sizeBytes: Long,
+    val position: Int,
+    val isCover: Boolean,
+    val url: String,
 )
 
 data class UnitView(

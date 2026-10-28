@@ -24,6 +24,7 @@ accommodation                 booking (future)
 | Aggregate | Table | Key facts |
 | --- | --- | --- |
 | `Property` | `accommodation_property` | `host_id` → FK `identity_user`; `city_id` reference (no FK, academic catalog); amenities comma-separated. |
+| Property gallery | `accommodation_property_image` | Ordered image metadata owned by a property; binary data is stored by the accommodation storage adapter. |
 | `Unit` | `accommodation_unit` | `property_id` → FK property; capacity units (`max_guests`, `bedrooms`, `beds`, `bathrooms`); the **reservation unit**. |
 | `Publication` | `accommodation_publication` | 1:1 `unit_id` (UNIQUE, FK); `status`; independent aggregate so it can pause/archive without touching the unit. |
 | `Pricing` | `accommodation_pricing` | 1:1 `publication_id` (UNIQUE, FK); `base_price_per_night NUMERIC(12,2)` + `currency`. |
@@ -135,7 +136,10 @@ harmful than helpful today; the hybrid can be revisited when booking exists.
 
 | Method | Path | Role / owner | Purpose |
 | --- | --- | --- | --- |
-| `POST` | `/api/v1/host/properties` | host | Create property. |
+| `POST` | `/api/v1/host/properties` (`application/json` or `multipart/form-data`) | host | Create property; multipart requests can include an initial gallery. |
+| `POST` | `/api/v1/host/properties/{id}/images` | host (owner) | Add images to a property gallery. |
+| `DELETE` | `/api/v1/host/properties/{id}/images/{imageId}` | host (owner) | Delete a property image. |
+| `GET` | `/api/v1/properties/{propertyId}/images/{imageId}` | owner or authenticated guest when a listing is published | Read image bytes. |
 | `PATCH` | `/api/v1/host/properties/{id}` | host (owner) | Update property. |
 | `POST` | `/api/v1/host/properties/{id}/units` | host (owner) | Add unit. |
 | `PATCH` | `/api/v1/host/units/{id}` | host (owner) | Update unit. |
@@ -161,3 +165,19 @@ verification level through `HostVerificationPort`; the application decides,
 - No seasonal/override pricing (base nightly price only).
 - No `daterange`/EXCLUDE constraint, no hybrid availability.
 - No rating/review data (those live in another future context).
+
+## Property images
+
+The gallery belongs to a property and is shared by its units and publications.
+The JSON property-creation endpoint remains backward compatible. To create a
+property with an initial gallery, send multipart/form-data with a JSON part
+named property and repeated file parts named images. Images can also be added
+later through the host image endpoint. The first gallery item is the cover.
+
+The API validates image contents (JPEG, PNG or GIF), limits each file to 5 MiB,
+limits image dimensions to 12,000 x 12,000 pixels and 40 megapixels, and allows
+at most 10 images per property. PostgreSQL stores metadata; image bytes stay
+outside the web root in accommodation.images.directory (default
+./storage/accommodation-images). Production deployments must mount that
+directory on persistent storage. Image reads require authentication and are
+allowed to the owning host or to guests when the property has a published listing.

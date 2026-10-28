@@ -16,8 +16,8 @@ spring:
     change-log: classpath:/db/changelog/db.changelog-master.yaml
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 12MB
+      max-file-size: 5MB
+      max-request-size: 52MB
 server:
   port: 8080
 
@@ -33,6 +33,10 @@ springdoc:
     # Deterministic order (tags and operations alphabetically).
     tags-sorter: alpha
     operations-sorter: alpha
+
+accommodation:
+  images:
+    directory: ${ACCOMMODATION_IMAGES_DIRECTORY:./storage/accommodation-images}
 
 identity:
   security:

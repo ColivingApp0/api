@@ -3,19 +3,23 @@ package com.coliving.api.accommodation.application.usecase
 import com.coliving.api.accommodation.application.dto.CreatePropertyCommand
 import com.coliving.api.accommodation.application.dto.PropertyView
 import com.coliving.api.accommodation.application.dto.UpdatePropertyCommand
+import com.coliving.api.accommodation.application.dto.UploadPropertyImage
 import com.coliving.api.accommodation.domain.model.Property
 import com.coliving.api.accommodation.domain.repository.PropertyRepository
 import com.coliving.api.shared.error.ForbiddenException
 import com.coliving.api.shared.error.NotFoundException
 import java.util.UUID
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class PropertyService(
     private val propertyRepository: PropertyRepository,
+    private val propertyImageService: PropertyImageService,
 ) {
 
-    fun create(command: CreatePropertyCommand): PropertyView {
+    @Transactional
+    fun create(command: CreatePropertyCommand, images: List<UploadPropertyImage> = emptyList()): PropertyView {
         if (command.title.isBlank()) throw com.coliving.api.shared.error.InvalidArgumentException("title is required")
         val property = Property.create(
             id = UUID.randomUUID(),
@@ -27,6 +31,7 @@ class PropertyService(
             amenities = command.amenities,
         )
         propertyRepository.save(property)
+        if (images.isNotEmpty()) propertyImageService.upload(property.id, command.hostId, images)
         return property.toView()
     }
 
@@ -74,5 +79,6 @@ class PropertyService(
             address = address,
             amenities = amenities,
             archived = archived,
+            images = propertyImageService.listForProperty(id),
         )
 }

@@ -13,11 +13,14 @@ import com.coliving.api.accommodation.application.dto.UnitView
 import com.coliving.api.accommodation.application.dto.UnblockDatesCommand
 import com.coliving.api.accommodation.application.dto.UpdatePropertyCommand
 import com.coliving.api.accommodation.application.dto.UpdateUnitCommand
+import com.coliving.api.accommodation.application.dto.PropertyImageView
+import com.coliving.api.accommodation.application.dto.UploadPropertyImage
 import com.coliving.api.accommodation.application.dto.ConfigurePricingCommand
 import com.coliving.api.accommodation.application.dto.ConfigureCatalogReferencesCommand
 import com.coliving.api.accommodation.application.dto.ConfigureRulesCommand
 import com.coliving.api.accommodation.application.usecase.AvailabilityLockService
 import com.coliving.api.accommodation.application.usecase.PropertyService
+import com.coliving.api.accommodation.application.usecase.PropertyImageService
 import com.coliving.api.accommodation.application.usecase.PublicationService
 import com.coliving.api.accommodation.application.usecase.UnitService
 import com.coliving.api.accommodation.presentation.dto.ConfigurePricingRequest
@@ -35,6 +38,7 @@ import java.time.LocalDate
 import java.util.UUID
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -46,6 +50,8 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RequestPart
+import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -61,6 +67,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/host")
 class HostAccommodationController(
     private val propertyService: PropertyService,
+    private val propertyImageService: PropertyImageService,
     private val unitService: UnitService,
     private val publicationService: PublicationService,
     private val availabilityLockService: AvailabilityLockService,
@@ -68,27 +75,63 @@ class HostAccommodationController(
 
     // ---------- Properties ----------
 
-    @PostMapping("/properties")
+    @PostMapping(value = ["/properties"], consumes = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseStatus(HttpStatus.CREATED)
     fun createProperty(
         @AuthenticationPrincipal current: CurrentUser,
         @Valid @RequestBody request: CreatePropertyRequest,
     ): PropertyView = requireHost(current) {
+        propertyService.create(request.toCommand(current.userId))
+    }
+
+    /**
+     * Creates a property and its initial image gallery in one multipart request.
+     * The "property" part is JSON; send repeated "images" file parts.
+     * The application/json endpoint above remains supported.
+     */
+    @PostMapping(value = ["/properties"], consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createPropertyWithImages(
+        @AuthenticationPrincipal current: CurrentUser,
+        @Valid @RequestPart("property") request: CreatePropertyRequest,
+        @RequestPart(value = "images", required = false) images: List<MultipartFile>? = null,
+    ): PropertyView = requireHost(current) {
         propertyService.create(
-            CreatePropertyCommand(
-                hostId = current.userId,
-                title = request.title,
-                description = request.description,
-                cityId = request.cityId,
-                address = request.address,
-                amenities = request.amenities,
-            ),
+            request.toCommand(current.userId),
+            images.orEmpty().map { it.toUploadPropertyImage() },
         )
     }
 
     @GetMapping("/properties")
     fun listProperties(@AuthenticationPrincipal current: CurrentUser): List<PropertyView> =
         requireHost(current) { propertyService.listByHost(current.userId) }
+
+    @PostMapping(
+        value = ["/properties/{id}/images"],
+        consumes = [MediaType.MULTIPART_FORM_DATA_VALUE],
+    )
+    @ResponseStatus(HttpStatus.CREATED)
+    fun uploadPropertyImages(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+        @RequestPart("images") images: List<MultipartFile>,
+    ): List<PropertyImageView> = requireHost(current) {
+        propertyImageService.upload(
+            propertyId = id,
+            hostId = current.userId,
+            uploads = images.map { it.toUploadPropertyImage() },
+        )
+    }
+
+    @DeleteMapping("/properties/{id}/images/{imageId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deletePropertyImage(
+        @AuthenticationPrincipal current: CurrentUser,
+        @PathVariable id: UUID,
+        @PathVariable imageId: UUID,
+    ) = requireHost(current) {
+        propertyImageService.delete(propertyId = id, imageId = imageId, hostId = current.userId)
+    }
 
     @PatchMapping("/properties/{id}")
     fun updateProperty(
@@ -290,6 +333,19 @@ class HostAccommodationController(
         )
         availabilityLockService.getAvailability(id, from, to)
     }
+
+    private fun CreatePropertyRequest.toCommand(hostId: UUID): CreatePropertyCommand =
+        CreatePropertyCommand(
+            hostId = hostId,
+            title = title,
+            description = description,
+            cityId = cityId,
+            address = address,
+            amenities = amenities,
+        )
+
+    private fun MultipartFile.toUploadPropertyImage(): UploadPropertyImage =
+        UploadPropertyImage(originalFilename = originalFilename, bytes = bytes)
 
     private fun <T> requireHost(current: CurrentUser, block: () -> T): T {
         if (!current.roleCodes.contains("ANFITRION")) {
