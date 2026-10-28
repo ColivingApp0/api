@@ -1,0 +1,67 @@
+databaseChangeLog:
+  - changeSet:
+      id: 9.3.0-accommodation-property-images
+      author: coliving
+      remarks: Stores property-image metadata; binary content lives in the configured storage adapter.
+      changes:
+        - createTable:
+            tableName: accommodation_property_image
+            remarks: Ordered gallery of a host-owned property.
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_accommodation_property_image
+              - column:
+                  name: property_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: storage_key
+                  type: VARCHAR(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: original_filename
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content_type
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: size_bytes
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sort_order
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: accommodation_property_image
+            baseColumnNames: property_id
+            referencedTableName: accommodation_property
+            referencedColumnNames: id
+            constraintName: fk_accommodation_property_image_property
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_accommodation_property_image_order
+            tableName: accommodation_property_image
+            columns:
+              - column:
+                  name: property_id
+              - column:
+                  name: sort_order

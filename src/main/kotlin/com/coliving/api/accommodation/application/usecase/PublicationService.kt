@@ -38,6 +38,7 @@ class PublicationService(
     private val pricingRepository: PricingRepository,
     private val ruleRepository: RuleRepository,
     private val hostVerificationPort: HostVerificationPort,
+    private val propertyImageService: PropertyImageService,
 ) {
 
     fun createPublication(command: CreatePublicationCommand): PublicationView {
@@ -73,7 +74,7 @@ class PublicationService(
     /**
      * RF-022 "enviar a revisión" (from BORRADOR) and RF-081 post-publication
      * review (from PUBLICADA/PAUSADA): the listing goes to EN_REVISION and the
-     * moderation team decides (see [resolveReview]).
+     * moderation team decides (see resolveReview).
      */
     fun requestReview(publicationId: UUID, hostId: UUID): PublicationView =
         transition(publicationId, hostId) { it.requestReview(Instant.now()) }
@@ -167,6 +168,12 @@ class PublicationService(
     fun findAllPublished(): List<PublicationView> =
         publicationRepository.findAllPublished().map { it.toView() }
 
+    /** Returns true when the property has a listing visible to guests. */
+    fun hasPublishedListingForProperty(propertyId: UUID): Boolean =
+        unitRepository.findByProperty(propertyId).any { unit ->
+            publicationRepository.findByUnit(unit.id)?.status == PublicationStatus.PUBLICADA
+        }
+
     fun findPublishedDetail(publicationId: UUID): PublicationDetailView? {
         val publication = publicationRepository.findById(publicationId) ?: return null
         if (publication.status != PublicationStatus.PUBLICADA) return null
@@ -236,7 +243,17 @@ class PublicationService(
         )
 
     internal fun Property.toView(): PropertyView =
-        PropertyView(id = id, hostId = hostId, title = title, description = description, cityId = cityId, address = address, amenities = amenities, archived = archived)
+        PropertyView(
+            id = id,
+            hostId = hostId,
+            title = title,
+            description = description,
+            cityId = cityId,
+            address = address,
+            amenities = amenities,
+            archived = archived,
+            images = propertyImageService.listForProperty(id),
+        )
 
     internal fun Pricing.toView(): PricingView =
         PricingView(publicationId = publicationId, basePricePerNight = basePricePerNight, currency = currency)
