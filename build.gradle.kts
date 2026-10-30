@@ -37,6 +37,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+    // Mailtrap Email Sending API (transactional e-mail).
+    implementation("io.mailtrap:mailtrap-java:1.3.0")
+    // Firebase Admin: Firestore (Trigger Email extension) and FCM push (RF-051).
+    implementation("com.google.firebase:firebase-admin:9.11.0")
     // 3.1.1 targets Spring Boot 4.1.x (same line as this project): Swagger UI at
     // /swagger-ui/index.html and the OpenAPI 3 document at /v3/api-docs.
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
@@ -70,4 +75,6 @@ allOpen {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // Tests use the logging mail transport and no push; never load local .env.
+    systemProperty("spring.dotenv.enabled", "false")
 }

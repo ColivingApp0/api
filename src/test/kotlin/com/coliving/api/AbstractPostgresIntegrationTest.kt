@@ -10,6 +10,7 @@ import org.testcontainers.containers.PostgreSQLContainer
  * classes) and points Spring's datasource at it, so `./gradlew test` never
  * needs a local database.
  */
+@org.springframework.test.context.ActiveProfiles("test")
 abstract class AbstractPostgresIntegrationTest {
 
     companion object {

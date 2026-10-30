@@ -25,6 +25,8 @@ class Profile(
     academicInfo: AcademicInfo,
     stayPreferences: StayPreferences,
     affinityVisible: Boolean,
+    avatarUrl: String? = null,
+    roommateProfileVisible: Boolean = false,
 ) {
 
     var name: String? = name
@@ -48,6 +50,14 @@ class Profile(
     var affinityVisible: Boolean = affinityVisible
         private set
 
+    /** Optional profile picture shown to hosts and, with consent, roommates. */
+    var avatarUrl: String? = avatarUrl
+        private set
+
+    /** Explicit authorization to show name/avatar to potential roommates. */
+    var roommateProfileVisible: Boolean = roommateProfileVisible
+        private set
+
     /** RF-010 / RF-011: profile update; blank strings normalize to null. */
     fun update(
         name: String?,
@@ -56,8 +66,10 @@ class Profile(
         cityId: UUID?,
         academicInfo: AcademicInfo,
         stayPreferences: StayPreferences,
+        avatarUrl: String? = this.avatarUrl,
     ) {
         this.name = normalize(name)
+        this.avatarUrl = normalize(avatarUrl)
         this.phone = normalize(phone)
         this.guestType = guestType
         this.cityId = cityId
@@ -66,9 +78,10 @@ class Profile(
     }
 
     /** RF-013: the user controls which affinity/academic data may be shown. */
-    fun configurePrivacy(affinityVisible: Boolean, academicVisible: Boolean) {
+    fun configurePrivacy(affinityVisible: Boolean, academicVisible: Boolean, roommateProfileVisible: Boolean) {
         this.affinityVisible = affinityVisible
         this.academicInfo = academicInfo.withVisible(academicVisible)
+        this.roommateProfileVisible = roommateProfileVisible
     }
 
     /** Completeness rule for the ANFITRION role (RF-004 / RF-013). */

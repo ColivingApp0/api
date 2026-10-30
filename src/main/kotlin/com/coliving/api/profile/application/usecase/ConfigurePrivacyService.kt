@@ -20,7 +20,7 @@ class ConfigurePrivacyService(
 
     fun configure(command: ConfigurePrivacyCommand): ProfileView {
         val profile = profileRepository.findByUserId(command.userId) ?: Profile.createEmpty(command.userId)
-        profile.configurePrivacy(command.affinityVisible, command.academicVisible)
+        profile.configurePrivacy(command.affinityVisible, command.academicVisible, command.roommateProfileVisible)
         profileRepository.save(profile)
         return profile.toProfileView(identityGateway.verificationLevelOf(command.userId))
     }

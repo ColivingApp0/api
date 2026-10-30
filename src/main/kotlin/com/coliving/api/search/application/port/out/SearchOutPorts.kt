@@ -4,23 +4,32 @@ import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 
-/**
- * Published-listing facet read from `accommodation` (see
- * PublicationSearchQuery). Only public data: exact location stays restricted
- * (RN-02) — the city facet is a catalog reference, not an address.
- */
+/** Published room facet read from `accommodation`. Public data only. */
 data class ListingFacet(
     val publicationId: UUID,
     val unitId: UUID,
-    val title: String,
+    val propertyId: UUID,
+    val roomTitle: String,
+    val propertyTitle: String,
+    val description: String?,
     val cityId: UUID?,
-    val pricePerNight: BigDecimal?,
+    val cityName: String?,
+    val neighborhood: String?,
+    val monthlyPrice: BigDecimal?,
     val currency: String?,
+    val priceUnit: String,
+    val roomType: String,
+    val bathroomType: String,
+    val airConditioning: Boolean,
+    val fan: Boolean,
+    val capacity: Int,
+    val occupiedPlaces: Int,
+    val availablePlaces: Int,
+    val photoUrl: String?,
+    val propertyPhotoUrl: String?,
     val updatedAt: Instant,
     val serviceCodes: Set<UUID> = emptySet(),
-    val roomTypeCode: UUID? = null,
     val accessibilityCodes: Set<UUID> = emptySet(),
-    val minNights: Int? = null,
 )
 
 interface PublicationCatalogPort {
@@ -29,14 +38,4 @@ interface PublicationCatalogPort {
 
     /** Whether the publication exists and is currently PUBLICADA (RF-034 guard). */
     fun isPublished(publicationId: UUID): Boolean
-}
-
-/**
- * Availability read used by the date filter (RF-030): whether a unit is free
- * for the whole [from, to) range. Implemented through accommodation's
- * enforcing availability port.
- */
-interface UnitAvailabilityPort {
-
-    fun isRangeAvailable(unitId: UUID, from: java.time.LocalDate, to: java.time.LocalDate): Boolean
 }

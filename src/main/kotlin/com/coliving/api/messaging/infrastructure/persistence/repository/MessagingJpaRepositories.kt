@@ -5,12 +5,18 @@ import com.coliving.api.messaging.infrastructure.persistence.entity.Conversation
 import com.coliving.api.messaging.infrastructure.persistence.entity.ConversationReportEntity
 import com.coliving.api.messaging.infrastructure.persistence.entity.MessageEntity
 import com.coliving.api.messaging.infrastructure.persistence.entity.NotificationEntity
+import com.coliving.api.messaging.infrastructure.persistence.entity.PushTokenEntity
 import java.util.UUID
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface ConversationJpaRepository : JpaRepository<ConversationEntity, UUID> {
 
     fun findByReservationId(reservationId: UUID): ConversationEntity?
+
+    fun findByUnitIdAndGuestUserIdAndReservationIdIsNull(
+        unitId: UUID,
+        guestUserId: UUID,
+    ): ConversationEntity?
 
     /** Threads of a user, whichever side they are on; newest first. */
     fun findByGuestUserIdOrHostUserIdOrderByCreatedAtDesc(
@@ -56,4 +62,11 @@ interface ConversationReportJpaRepository : JpaRepository<ConversationReportEnti
         conversationId: UUID,
         reporterUserId: UUID,
     ): ConversationReportEntity?
+}
+
+interface PushTokenJpaRepository : JpaRepository<PushTokenEntity, UUID> {
+
+    fun findByUserId(userId: UUID): List<PushTokenEntity>
+
+    fun findByToken(token: String): PushTokenEntity?
 }

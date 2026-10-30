@@ -55,6 +55,7 @@ class ProfileController(
             careerId = request.careerId,
             academicUnlisted = request.academicUnlisted,
             stayPreferenceCodes = request.stayPreferences,
+            avatarUrl = request.avatarUrl,
         ),
     )
 
@@ -67,6 +68,7 @@ class ProfileController(
             userId = current.userId,
             affinityVisible = request.affinityVisible ?: false,
             academicVisible = request.academicVisible,
+            roommateProfileVisible = request.roommateProfileVisible,
         ),
     )
 }

@@ -52,11 +52,11 @@ class ProfileTest {
     fun `configurePrivacy controls affinity and academic visibility`() {
         val profile = Profile.createEmpty(userId)
 
-        profile.configurePrivacy(affinityVisible = true, academicVisible = false)
+        profile.configurePrivacy(affinityVisible = true, academicVisible = false, roommateProfileVisible = true)
         assertTrue(profile.affinityVisible)
         assertFalse(profile.academicInfo.visible)
 
-        profile.configurePrivacy(affinityVisible = true, academicVisible = true)
+        profile.configurePrivacy(affinityVisible = true, academicVisible = true, roommateProfileVisible = true)
         assertTrue(profile.academicInfo.visible)
     }
 

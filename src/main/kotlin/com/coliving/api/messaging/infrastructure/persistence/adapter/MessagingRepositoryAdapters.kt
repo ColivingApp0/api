@@ -4,11 +4,13 @@ import com.coliving.api.messaging.domain.model.Conversation
 import com.coliving.api.messaging.domain.model.ConversationReport
 import com.coliving.api.messaging.domain.model.Message
 import com.coliving.api.messaging.domain.model.Notification
+import com.coliving.api.messaging.domain.model.PushToken
 import com.coliving.api.messaging.domain.model.UserBlock
 import com.coliving.api.messaging.domain.repository.ConversationRepository
 import com.coliving.api.messaging.domain.repository.ConversationReportRepository
 import com.coliving.api.messaging.domain.repository.MessageRepository
 import com.coliving.api.messaging.domain.repository.NotificationRepository
+import com.coliving.api.messaging.domain.repository.PushTokenRepository
 import com.coliving.api.messaging.domain.repository.UserBlockRepository
 import com.coliving.api.messaging.infrastructure.persistence.entity.ConversationBlockEntity
 import com.coliving.api.messaging.infrastructure.persistence.entity.ConversationReportEntity
@@ -18,6 +20,7 @@ import com.coliving.api.messaging.infrastructure.persistence.repository.Conversa
 import com.coliving.api.messaging.infrastructure.persistence.repository.ConversationReportJpaRepository
 import com.coliving.api.messaging.infrastructure.persistence.repository.MessageJpaRepository
 import com.coliving.api.messaging.infrastructure.persistence.repository.NotificationJpaRepository
+import com.coliving.api.messaging.infrastructure.persistence.repository.PushTokenJpaRepository
 import java.util.UUID
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
@@ -33,6 +36,10 @@ class ConversationRepositoryAdapter(
 
     override fun findByReservation(reservationId: UUID): Conversation? =
         jpaRepository.findByReservationId(reservationId)?.let(MessagingMappers::toDomain)
+
+    override fun findByListingAndGuest(unitId: UUID, guestUserId: UUID): Conversation? =
+        jpaRepository.findByUnitIdAndGuestUserIdAndReservationIdIsNull(unitId, guestUserId)
+            ?.let(MessagingMappers::toDomain)
 
     override fun findByParticipant(userId: UUID): List<Conversation> =
         jpaRepository.findByGuestUserIdOrHostUserIdOrderByCreatedAtDesc(userId, userId)
@@ -131,5 +138,31 @@ class ConversationReportRepositoryAdapter(
     @Transactional(propagation = Propagation.MANDATORY)
     override fun save(report: ConversationReport) {
         jpaRepository.save(MessagingMappers.toEntity(report))
+    }
+}
+
+@Component
+class PushTokenRepositoryAdapter(
+    private val jpaRepository: PushTokenJpaRepository,
+) : PushTokenRepository {
+
+    override fun findByUser(userId: UUID): List<PushToken> =
+        jpaRepository.findByUserId(userId).map(MessagingMappers::toDomain)
+
+    override fun findByToken(token: String): PushToken? =
+        jpaRepository.findByToken(token)?.let(MessagingMappers::toDomain)
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    override fun save(token: PushToken) {
+        jpaRepository.save(MessagingMappers.toEntity(token))
+    }
+
+    /**
+     * Invalid FCM tokens are removed after the message transaction commits, so
+     * this method must be able to start its own transaction.
+     */
+    @Transactional
+    override fun delete(token: PushToken) {
+        jpaRepository.delete(MessagingMappers.toEntity(token))
     }
 }

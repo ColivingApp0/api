@@ -1,6 +1,7 @@
 package com.coliving.api.messaging.infrastructure.persistence.entity
 
 import com.coliving.api.messaging.domain.enums.NotificationType
+import com.coliving.api.messaging.domain.enums.PushPlatform
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -17,9 +18,18 @@ class ConversationEntity(
     @Id @Column(name = "id", nullable = false)
     var id: UUID,
 
-    // Cross-context reference to the reservation: plain UUID (no FK by architecture rule).
-    @Column(name = "reservation_id", nullable = false, unique = true)
-    var reservationId: UUID,
+    // Cross-context references are plain UUIDs (no FK by architecture rule).
+    @Column(name = "reservation_id", unique = true)
+    var reservationId: UUID?,
+
+    @Column(name = "unit_id")
+    var unitId: UUID?,
+
+    @Column(name = "publication_id")
+    var publicationId: UUID?,
+
+    @Column(name = "subject", length = 255)
+    var subject: String?,
 
     @Column(name = "guest_user_id", nullable = false)
     var guestUserId: UUID,
@@ -127,4 +137,32 @@ class ConversationReportEntity(
 
     @Column(name = "created_at", nullable = false)
     var createdAt: Instant,
+)
+
+@Entity
+@Table(
+    name = "messaging_push_token",
+    uniqueConstraints = [
+        UniqueConstraint(name = "uk_messaging_push_token_token", columnNames = ["token"]),
+    ],
+)
+class PushTokenEntity(
+    @Id @Column(name = "id", nullable = false)
+    var id: UUID,
+
+    @Column(name = "user_id", nullable = false)
+    var userId: UUID,
+
+    @Column(name = "token", nullable = false, length = 512)
+    var token: String,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "platform", nullable = false, length = 20)
+    var platform: PushPlatform,
+
+    @Column(name = "created_at", nullable = false)
+    var createdAt: Instant,
+
+    @Column(name = "last_seen_at", nullable = false)
+    var lastSeenAt: Instant,
 )

@@ -1,0 +1,296 @@
+databaseChangeLog:
+  - changeSet:
+      id: 11.0.0-monthly-room-rental
+      author: coliving
+      remarks: >-
+        Refactors the rental model from nightly stays to monthly room rental.
+        Property gains human-readable location fields and photographs; the unit
+        (room) gains monthly pricing, capacity/occupancy characteristics and
+        photographs. Reservations stop using dates (legacy date columns are kept
+        nullable for historical rows, never used by new logic). Profiles gain an
+        explicit roommate-profile sharing flag, and conversations can be opened
+        about a listing before a reservation exists.
+      changes:
+        # ---------- Property ----------
+        - addColumn:
+            tableName: accommodation_property
+            columns:
+              - column:
+                  name: city_name
+                  type: VARCHAR(120)
+                  remarks: Human-readable city used by search and detail pages.
+              - column:
+                  name: neighborhood
+                  type: VARCHAR(120)
+                  remarks: Neighborhood or sector (less precise than the address).
+
+        # ---------- Room (unit) ----------
+        - addColumn:
+            tableName: accommodation_unit
+            columns:
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: monthly_price
+                  type: NUMERIC(12,2)
+                  remarks: Monthly rent. NULL means the host must set it before publishing.
+              - column:
+                  name: currency
+                  type: VARCHAR(5)
+                  defaultValue: "COP"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price_unit
+                  type: VARCHAR(20)
+                  defaultValue: "POR_HABITACION"
+                  remarks: POR_HABITACION or POR_PERSONA (shared rooms).
+                  constraints:
+                    nullable: false
+              - column:
+                  name: room_type
+                  type: VARCHAR(20)
+                  defaultValue: "INDIVIDUAL"
+                  remarks: INDIVIDUAL or COMPARTIDA.
+                  constraints:
+                    nullable: false
+              - column:
+                  name: bathroom_type
+                  type: VARCHAR(20)
+                  defaultValue: "COMPARTIDO"
+                  remarks: PRIVADO or COMPARTIDO.
+                  constraints:
+                    nullable: false
+              - column:
+                  name: air_conditioning
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fan
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: common_areas
+                  type: TEXT
+                  remarks: Comma-separated common areas/amenities of the room.
+              - column:
+                  name: sort_order
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: |
+              ALTER TABLE accommodation_unit
+                ADD CONSTRAINT ck_accommodation_unit_monthly_price
+                CHECK (monthly_price IS NULL OR monthly_price > 0);
+              ALTER TABLE accommodation_unit
+                ADD CONSTRAINT ck_accommodation_unit_price_unit
+                CHECK (price_unit IN ('POR_HABITACION', 'POR_PERSONA'));
+              ALTER TABLE accommodation_unit
+                ADD CONSTRAINT ck_accommodation_unit_room_type
+                CHECK (room_type IN ('INDIVIDUAL', 'COMPARTIDA'));
+              ALTER TABLE accommodation_unit
+                ADD CONSTRAINT ck_accommodation_unit_bathroom_type
+                CHECK (bathroom_type IN ('PRIVADO', 'COMPARTIDO'));
+        - createIndex:
+            indexName: idx_accommodation_unit_room_type
+            tableName: accommodation_unit
+            columns:
+              - column:
+                  name: room_type
+
+        # ---------- Photographs ----------
+        - createTable:
+            tableName: accommodation_property_photo
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_accommodation_property_photo
+              - column:
+                  name: property_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: url
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: position
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: accommodation_property_photo
+            baseColumnNames: property_id
+            referencedTableName: accommodation_property
+            referencedColumnNames: id
+            constraintName: fk_accommodation_property_photo_property
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_accommodation_property_photo_property
+            tableName: accommodation_property_photo
+            columns:
+              - column:
+                  name: property_id
+              - column:
+                  name: position
+
+        - createTable:
+            tableName: accommodation_unit_photo
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_accommodation_unit_photo
+              - column:
+                  name: unit_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: url
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: position
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: accommodation_unit_photo
+            baseColumnNames: unit_id
+            referencedTableName: accommodation_unit
+            referencedColumnNames: id
+            constraintName: fk_accommodation_unit_photo_unit
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_accommodation_unit_photo_unit
+            tableName: accommodation_unit_photo
+            columns:
+              - column:
+                  name: unit_id
+              - column:
+                  name: position
+
+        # ---------- Booking (monthly, no dates) ----------
+        - dropNotNullConstraint:
+            tableName: booking_reservation
+            columnName: from_date
+            columnDataType: DATE
+        - dropNotNullConstraint:
+            tableName: booking_reservation
+            columnName: to_date
+            columnDataType: DATE
+        - dropNotNullConstraint:
+            tableName: booking_reservation
+            columnName: price_per_night
+            columnDataType: "NUMERIC(12, 2)"
+        - dropNotNullConstraint:
+            tableName: booking_reservation
+            columnName: occupants
+            columnDataType: INT
+        - addColumn:
+            tableName: booking_reservation
+            columns:
+              - column:
+                  name: monthly_price
+                  type: NUMERIC(12,2)
+                  remarks: Frozen monthly rent snapshot (RN-07). NULL only on legacy nightly rows.
+              - column:
+                  name: price_unit
+                  type: VARCHAR(20)
+                  remarks: POR_HABITACION or POR_PERSONA of the frozen snapshot.
+              - column:
+                  name: places
+                  type: INT
+                  defaultValueNumeric: 1
+                  remarks: Places requested. One for shared rooms, the room for exclusive ones.
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: |
+              CREATE UNIQUE INDEX uk_booking_active_request_per_guest_unit
+                ON booking_reservation (guest_user_id, unit_id)
+                WHERE status IN ('SOLICITADA', 'ACEPTADA', 'CONFIRMADA');
+              CREATE INDEX idx_booking_reservation_unit_status
+                ON booking_reservation (unit_id, status);
+
+        # Safe treatment of legacy nightly listings: they had a per-night price
+        # that cannot be converted to a monthly rent automatically. Publish state
+        # is paused until the host reviews/sets the monthly price.
+        - sql:
+            sql: |
+              UPDATE accommodation_publication p
+                 SET status = 'PAUSADA',
+                     updated_at = CURRENT_TIMESTAMP
+                FROM accommodation_unit u
+               WHERE p.unit_id = u.id
+                 AND p.status = 'PUBLICADA'
+                 AND u.monthly_price IS NULL;
+
+        # ---------- Profile privacy ----------
+        - addColumn:
+            tableName: profile_profile
+            columns:
+              - column:
+                  name: roommate_profile_visible
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  remarks: Explicit authorization to show name/avatar to potential roommates.
+                  constraints:
+                    nullable: false
+              - column:
+                  name: avatar_url
+                  type: VARCHAR(1000)
+
+        # ---------- Messaging: listing conversations ----------
+        - dropNotNullConstraint:
+            tableName: messaging_conversation
+            columnName: reservation_id
+            columnDataType: UUID
+        - addColumn:
+            tableName: messaging_conversation
+            columns:
+              - column:
+                  name: unit_id
+                  type: UUID
+                  remarks: Room the conversation is about (no FK cross-context).
+              - column:
+                  name: publication_id
+                  type: UUID
+              - column:
+                  name: subject
+                  type: VARCHAR(255)
+        - sql:
+            sql: |
+              CREATE UNIQUE INDEX uk_messaging_listing_thread
+                ON messaging_conversation (guest_user_id, host_user_id, unit_id)
+                WHERE reservation_id IS NULL AND unit_id IS NOT NULL;

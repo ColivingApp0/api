@@ -1,13 +1,19 @@
 package com.coliving.api.accommodation.application.dto
 
-import com.coliving.api.accommodation.domain.enums.AvailabilityState
-import com.coliving.api.accommodation.domain.enums.CancellationPolicy
+import com.coliving.api.accommodation.domain.enums.BathroomType
 import com.coliving.api.accommodation.domain.enums.Currency
+import com.coliving.api.accommodation.domain.enums.PriceUnit
 import com.coliving.api.accommodation.domain.enums.PublicationStatus
+import com.coliving.api.accommodation.domain.enums.RoomType
 import java.math.BigDecimal
-import java.time.LocalDate
-import java.time.LocalTime
 import java.util.UUID
+
+/** Monthly-rental response contracts. Money is always monthly and explicit. */
+data class PhotoView(
+    val id: UUID,
+    val url: String,
+    val position: Int,
+)
 
 data class PropertyView(
     val id: UUID,
@@ -15,21 +21,12 @@ data class PropertyView(
     val title: String?,
     val description: String?,
     val cityId: UUID?,
+    val cityName: String?,
+    val neighborhood: String?,
     val address: String?,
     val amenities: List<String>,
     val archived: Boolean,
-)
-
-data class UnitView(
-    val id: UUID,
-    val propertyId: UUID,
-    val name: String,
-    val maxGuests: Int,
-    val bedrooms: Int,
-    val beds: Int,
-    val bathrooms: Int,
-    val typeCode: UUID? = null,
-    val accessibilityCodes: Set<UUID> = emptySet(),
+    val photos: List<PhotoView> = emptyList(),
 )
 
 data class PublicationView(
@@ -41,32 +38,74 @@ data class PublicationView(
     val applicableRuleCodes: Set<UUID> = emptySet(),
 )
 
+/** Monthly price of a room (kept for clients that still use the pricing path). */
 data class PricingView(
     val publicationId: UUID,
-    val basePricePerNight: BigDecimal,
+    val monthlyPrice: BigDecimal?,
     val currency: Currency,
+    val priceUnit: PriceUnit,
 )
 
-data class RulesView(
-    val publicationId: UUID,
-    val cancellationPolicy: CancellationPolicy,
-    val checkInTime: LocalTime,
-    val checkOutTime: LocalTime,
-    val minNights: Int,
-    val maxNights: Int,
-    val houseRules: List<String>,
+data class UnitView(
+    val id: UUID,
+    val propertyId: UUID,
+    val name: String,
+    val description: String?,
+    val maxGuests: Int,
+    val monthlyPrice: BigDecimal?,
+    val currency: Currency,
+    val priceUnit: PriceUnit,
+    val roomType: RoomType,
+    val bathroomType: BathroomType,
+    val airConditioning: Boolean,
+    val fan: Boolean,
+    val commonAreas: List<String>,
+    val typeCode: UUID? = null,
+    val accessibilityCodes: Set<UUID> = emptySet(),
+    val sortOrder: Int = 0,
+    val photos: List<PhotoView> = emptyList(),
+    val publication: PublicationView? = null,
+    val occupiedPlaces: Int = 0,
+    val availablePlaces: Int = 0,
+    val published: Boolean = false,
+    val effectiveAvailable: Boolean = false,
+    val availabilityLabel: String = "No disponible",
 )
 
-data class DayAvailabilityView(
-    val date: LocalDate,
-    val state: AvailabilityState,
-    val reserved: Boolean,
+/** Public profile card used for hosts and — with consent — roommates. */
+data class PublicUserView(
+    val userId: UUID,
+    val name: String?,
+    val avatarUrl: String?,
+)
+
+data class OccupancyView(
+    val capacity: Int,
+    val occupiedPlaces: Int,
+    val availablePlaces: Int,
+    val published: Boolean,
+    val effectiveAvailable: Boolean,
+    val label: String,
+)
+
+data class PropertyDetailView(
+    val property: PropertyView,
+    val host: PublicUserView?,
+    val rooms: List<UnitView>,
 )
 
 data class PublicationDetailView(
     val publication: PublicationView,
     val property: PropertyView,
     val unit: UnitView,
-    val pricing: PricingView?,
-    val rules: RulesView?,
+    val host: PublicUserView?,
+    val occupancy: OccupancyView,
+    val propertyPhotos: List<PhotoView> = emptyList(),
+)
+
+/** A roommate of a shared room, only when their profile sharing is authorized. */
+data class RoommateView(
+    val userId: UUID,
+    val name: String,
+    val avatarUrl: String?,
 )

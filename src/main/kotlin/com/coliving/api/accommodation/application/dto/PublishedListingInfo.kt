@@ -5,21 +5,32 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Search-ready projection of a published listing, consumed by the `search`
- * context through [com.coliving.api.accommodation.application.query.PublicationSearchQuery].
- *
- * Only public-facing data (RN-02: exact location stays restricted — city only).
+ * Search-ready projection of a published room listing, consumed by `search`.
+ * Only public data: no resident identities, no private contact details.
  */
 data class PublishedListingInfo(
     val publicationId: UUID,
     val unitId: UUID,
-    val title: String,
+    val propertyId: UUID,
+    val roomTitle: String,
+    val propertyTitle: String,
+    val description: String?,
     val cityId: UUID?,
-    val pricePerNight: BigDecimal?,
+    val cityName: String?,
+    val neighborhood: String?,
+    val monthlyPrice: BigDecimal?,
     val currency: String?,
+    val priceUnit: String,
+    val roomType: String,
+    val bathroomType: String,
+    val airConditioning: Boolean,
+    val fan: Boolean,
+    val capacity: Int,
+    val occupiedPlaces: Int,
+    val availablePlaces: Int,
+    val photoUrl: String?,
+    val propertyPhotoUrl: String?,
     val publishedAt: Instant,
     val serviceCodes: Set<UUID> = emptySet(),
-    val roomTypeCode: UUID? = null,
     val accessibilityCodes: Set<UUID> = emptySet(),
-    val minNights: Int? = null,
 )

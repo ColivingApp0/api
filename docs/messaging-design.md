@@ -14,7 +14,7 @@ mensaje sin exponer contenido sensible.
 | Req | Regla | Implementación |
 |-----|-------|----------------|
 | RF-050 (Esencial) | Huésped y anfitrión conversan dentro de una solicitud | `Conversation` (una por reserva, creada de forma idempotente) + `ConversationService`; los mensajes se ordenan por `sentAt`, identifican al remitente y solo los dos participantes leen/escriben |
-| RF-051 (Esencial) | Notificación de mensajes y cambios de estado; sin datos sensibles en pantalla bloqueada | `Notification` (payload sin contenido: etiqueta genérica + `referenceId`) y `NotificationService` (bandeja + contador de no leídas); se emite en la misma transacción del envío |
+| RF-051 (Esencial) | Notificación de mensajes y cambios de estado; sin datos sensibles en pantalla bloqueada | `Notification` (payload sin contenido: etiqueta genérica + `referenceId`) y `NotificationService` (bandeja + contador de no leídas); canales externos: correo (`MessageEmailNotifier`) y push FCM (`FirebasePushSender`), despachados después del commit |
 
 ## Decisiones de diseño
 
@@ -31,6 +31,16 @@ mensaje sin exponer contenido sensible.
 - **Límites de contenido.** `Message.send` normaliza (`trim`) y rechaza cuerpos
   vacíos o de más de 2000 caracteres: base de RF-053 sin inventar patrones de
   spam no definidos por el SRS.
+- **Canales externos después del commit.** `MessageService` publica un
+  `NewMessageEvent` dentro de la transacción; `NewMessageNotificationListener`
+  lo consume con `@TransactionalEventListener(AFTER_COMMIT)` y despacha correo y
+  push por separado. Un fallo del proveedor se registra y no revierte el mensaje
+  ni bloquea el otro canal.
+- **Token push único por instalación.** `messaging_push_token.token` es UNIQUE;
+  si otra cuenta inicia sesión en el mismo navegador, el token se reasigna en
+  lugar de duplicarse. FCM elimina los tokens `UNREGISTERED`/`INVALID_ARGUMENT`.
+- **Contenido del push.** Título/cuerpo genéricos y `conversationId` en `data`;
+  nunca el cuerpo del mensaje ni datos de la reserva (RF-051).
 
 ## Pendiente (fuera de alcance actual)
 
@@ -38,8 +48,6 @@ mensaje sin exponer contenido sensible.
   (RF-081) para materializar casos; el bloqueo detendría nuevos mensajes.
 - RF-053 (controles ante patrones definidos y eventos auditables): requiere la
   definición de patrones y el registro de auditoría (RF-085).
-- RF-051 canales externos (correo/push): hoy solo canal in-app; la abstracción
-  de `NotificationRepository` admite añadir despachadores sin cambiar el modelo.
 
 ## Puertos (disciplina cross-context existente)
 
@@ -65,6 +73,10 @@ mensaje sin exponer contenido sensible.
   si aún no existe (para clientes que solo conocen la reserva).
 - `GET /api/v1/notifications` — bandeja con contador de no leídas.
 - `POST /api/v1/notifications/{id}/read` — marca una notificación como leída.
+- `POST /api/v1/users/me/push-tokens` — registra/reasigna el token FCM del
+  dispositivo (`{token, platform}`).
+- `DELETE /api/v1/users/me/push-tokens?token=...` — elimina el token del usuario
+  (idempotente).
 
 ## Tests
 
@@ -79,3 +91,8 @@ mensaje sin exponer contenido sensible.
   hilo a partir de la reserva.
 - `NotificationServiceTest`: bandeja con contador, marcado de leído, propiedad y
   no encontrado.
+- `PushTokenServiceTest`: alta, re-registro, reasignación entre cuentas, token
+  vacío y baja idempotente.
+- `NewMessageNotificationListenerTest`: fan-out a push/correo, correo
+  desactivado y destinatario sin contacto.
+- `AccountEmailSenderTest`: enlaces de verificación y reset con el token.

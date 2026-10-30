@@ -6,8 +6,9 @@ import com.coliving.api.profile.domain.model.Profile
 import java.util.UUID
 
 /**
- * Public view of the profile aggregate. [verificationLevel] is a projection
- * obtained from the `identity` bounded context and is never stored here.
+ * Profile view. [verificationLevel] is a projection obtained from `identity`.
+ * [roommateProfileVisible] is the explicit consent required to reveal the
+ * profile to potential roommates.
  */
 data class ProfileView(
     val userId: UUID,
@@ -22,6 +23,8 @@ data class ProfileView(
     val academicVisible: Boolean,
     val stayPreferenceCodes: List<String>,
     val affinityVisible: Boolean,
+    val avatarUrl: String?,
+    val roommateProfileVisible: Boolean,
     val verificationLevel: VerificationLevel,
 )
 
@@ -39,5 +42,15 @@ internal fun Profile.toProfileView(verificationLevel: VerificationLevel): Profil
         academicVisible = academicInfo.visible,
         stayPreferenceCodes = stayPreferences.codes(),
         affinityVisible = affinityVisible,
+        avatarUrl = avatarUrl,
+        roommateProfileVisible = roommateProfileVisible,
         verificationLevel = verificationLevel,
     )
+
+/** Minimal public card; no phone, documents, academic data or contact details. */
+data class PublicProfileCard(
+    val userId: UUID,
+    val name: String?,
+    val avatarUrl: String?,
+    val roommateProfileVisible: Boolean,
+)

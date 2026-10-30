@@ -52,7 +52,11 @@ class ConversationController(
         @AuthenticationPrincipal current: CurrentUser,
         @Valid @RequestBody request: OpenConversationRequest,
     ): ConversationDetailView = conversationService.open(
-        OpenConversationCommand(reservationId = request.reservationId, actorId = current.userId),
+        OpenConversationCommand(
+            reservationId = request.reservationId,
+            unitId = request.unitId,
+            actorId = current.userId,
+        ),
     )
 
     /** Thread with its messages in chronological order. */

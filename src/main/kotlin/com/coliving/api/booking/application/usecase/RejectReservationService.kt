@@ -8,10 +8,7 @@ import java.time.Instant
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-/**
- * Host rejects a request (RF-041). The decision notifies the guest (event with
- * optional reason) and moves the reservation to its terminal RECHAZADA state.
- */
+/** Host rejects a request: terminal and no place is consumed. */
 @Service
 class RejectReservationService(
     private val reservationRepository: ReservationRepository,
@@ -23,7 +20,6 @@ class RejectReservationService(
         val now = Instant.now()
         val reservation = createReservationService.loadReservation(command.reservationId)
         createReservationService.requireHostOfUnit(reservation.unitId, command.hostId)
-
         reservation.reject(now)
         reservationRepository.save(reservation)
         createReservationService.recordEvent(
@@ -33,6 +29,9 @@ class RejectReservationService(
             command.reason,
             now,
         )
-        return createReservationService.toView(reservation)
+        return createReservationService.toView(
+            reservation,
+            createReservationService.unitCatalogPort.findBookableUnit(reservation.unitId),
+        )
     }
 }

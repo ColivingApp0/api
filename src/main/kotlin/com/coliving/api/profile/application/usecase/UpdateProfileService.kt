@@ -36,6 +36,7 @@ class UpdateProfileService(
                 visible = profile.academicInfo.visible,
             ),
             stayPreferences = StayPreferences.of(command.stayPreferenceCodes),
+            avatarUrl = command.avatarUrl ?: profile.avatarUrl,
         )
         profileRepository.save(profile)
         return profile.toProfileView(identityGateway.verificationLevelOf(command.userId))

@@ -1,6 +1,5 @@
 package com.coliving.api.booking.infrastructure.persistence.entity
 
-import com.coliving.api.booking.domain.enums.CancellationPolicyType
 import com.coliving.api.booking.domain.enums.ReservationStatus
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -11,7 +10,6 @@ import jakarta.persistence.PreUpdate
 import jakarta.persistence.Table
 import java.math.BigDecimal
 import java.time.Instant
-import java.time.LocalDate
 import java.util.UUID
 
 @Entity
@@ -30,14 +28,8 @@ class ReservationEntity(
     @Column(name = "guest_user_id", nullable = false)
     var guestUserId: UUID,
 
-    @Column(name = "from_date", nullable = false)
-    var fromDate: LocalDate,
-
-    @Column(name = "to_date", nullable = false)
-    var toDate: LocalDate,
-
-    @Column(name = "occupants", nullable = false)
-    var occupants: Int,
+    @Column(name = "places", nullable = false)
+    var places: Int = 1,
 
     @Column(name = "message", columnDefinition = "TEXT")
     var message: String?,
@@ -47,18 +39,14 @@ class ReservationEntity(
     var status: ReservationStatus,
 
     // Economic snapshot (RN-07): frozen at request time.
-    @Column(name = "price_per_night", nullable = false, precision = 12, scale = 2)
-    var pricePerNight: BigDecimal,
+    @Column(name = "monthly_price", precision = 12, scale = 2)
+    var monthlyPrice: BigDecimal?,
 
     @Column(name = "currency", nullable = false, length = 5)
     var currency: String,
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "cancellation_policy", length = 30)
-    var cancellationPolicy: CancellationPolicyType?,
-
-    @Column(name = "hold_expires_at")
-    var holdExpiresAt: Instant?,
+    @Column(name = "price_unit", length = 20)
+    var priceUnit: String?,
 
     @Column(name = "created_at", nullable = false)
     var createdAt: Instant,

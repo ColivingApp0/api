@@ -19,6 +19,7 @@ import kotlin.test.assertEquals
  * context) so the seeded migration path always runs and is deterministic.
  */
 @SpringBootTest
+@org.springframework.test.context.ActiveProfiles("test")
 class ProfileMigrationIT {
 
     @Autowired

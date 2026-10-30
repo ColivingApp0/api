@@ -1,22 +1,16 @@
 package com.coliving.api.booking.presentation.dto
 
-import jakarta.validation.constraints.Future
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
-import java.time.LocalDate
+import java.util.UUID
 
+/** Monthly room request: no dates or nights, only the room and an optional message. */
 data class CreateReservationRequest(
     @field:NotNull
-    val unitId: java.util.UUID,
-    @field:NotNull
-    @field:Future
-    val fromDate: LocalDate,
-    @field:NotNull
-    @field:Future
-    val toDate: LocalDate,
+    val unitId: UUID,
     @field:Positive
-    val occupants: Int,
+    val places: Int = 1,
     val message: String? = null,
 )
 

@@ -8,11 +8,6 @@ import java.util.UUID
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-/**
- * Read-side implementation of [ReservationMessagingQuery]: pure projection over
- * reservations plus the unit owner read from accommodation. No mutation and no
- * business decision — deciding who may open a conversation is messaging's job.
- */
 @Service
 class ReservationMessagingQueryService(
     private val reservationRepository: ReservationRepository,
@@ -22,13 +17,13 @@ class ReservationMessagingQueryService(
     @Transactional(readOnly = true)
     override fun partiesOf(reservationId: UUID): ReservationPartiesInfo? {
         val reservation = reservationRepository.findById(reservationId) ?: return null
-        val hostUserId = unitCatalogPort.hostOfUnit(reservation.unitId) ?: return null
+        val room = unitCatalogPort.findBookableUnit(reservation.unitId) ?: return null
         return ReservationPartiesInfo(
             reservationId = reservation.id,
+            unitId = reservation.unitId,
+            publicationId = reservation.publicationId,
             guestUserId = reservation.guestUserId,
-            hostUserId = hostUserId,
-            fromDate = reservation.fromDate,
-            toDate = reservation.toDate,
+            hostUserId = room.hostId,
         )
     }
 }

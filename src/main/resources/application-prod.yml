@@ -11,6 +11,20 @@ logging:
 server:
   port: 8080
 
+# Production e-mail/push. Set MAIL_PROVIDER=smtp (Google Workspace or any SMTP
+# relay) or MAIL_PROVIDER=firebase (Firestore Trigger Email extension). Push
+# needs PUSH_ENABLED=true plus Firebase credentials.
+app:
+  mail:
+    provider: ${MAIL_PROVIDER:mailtrap}
+    public-base-url: ${APP_PUBLIC_BASE_URL}
+  push:
+    enabled: ${PUSH_ENABLED:false}
+  firebase:
+    enabled: ${FIREBASE_ENABLED:false}
+    project-id: ${FIREBASE_PROJECT_ID:}
+    credentials-path: ${FIREBASE_CREDENTIALS:}
+
 # The API documentation publishes the whole surface of the API, so production
 # keeps it off unless the deployment opts in with SWAGGER_ENABLED=true.
 springdoc:

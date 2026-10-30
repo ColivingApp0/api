@@ -1,18 +1,14 @@
 package com.coliving.api.community.infrastructure
 
 import com.coliving.api.AbstractPostgresIntegrationTest
-import com.coliving.api.accommodation.application.dto.ConfigurePricingCommand
 import com.coliving.api.accommodation.application.dto.CreatePropertyCommand
-import com.coliving.api.accommodation.application.dto.CreatePublicationCommand
 import com.coliving.api.accommodation.application.dto.CreateUnitCommand
 import com.coliving.api.accommodation.application.usecase.PropertyService
 import com.coliving.api.accommodation.application.usecase.PublicationService
 import com.coliving.api.accommodation.application.usecase.UnitService
-import com.coliving.api.booking.application.dto.ConfirmReservationCommand
 import com.coliving.api.booking.application.dto.CreateReservationCommand
 import com.coliving.api.booking.application.dto.HostDecisionCommand
 import com.coliving.api.booking.application.usecase.AcceptReservationService
-import com.coliving.api.booking.application.usecase.ConfirmReservationService
 import com.coliving.api.booking.application.usecase.CreateReservationService
 import com.coliving.api.community.application.dto.ConfirmAttendanceCommand
 import com.coliving.api.community.application.dto.CreateActivityCommand
@@ -26,7 +22,6 @@ import com.coliving.api.shared.error.ConflictException
 import com.coliving.api.shared.error.ForbiddenException
 import java.math.BigDecimal
 import java.time.Instant
-import java.time.LocalDate
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,15 +47,11 @@ class CommunityCapacityIT : AbstractPostgresIntegrationTest() {
     @Autowired lateinit var publicationService: PublicationService
     @Autowired lateinit var createReservationService: CreateReservationService
     @Autowired lateinit var acceptReservationService: AcceptReservationService
-    @Autowired lateinit var confirmReservationService: ConfirmReservationService
     @Autowired lateinit var createActivityService: CreateActivityService
     @Autowired lateinit var confirmAttendanceService: ConfirmAttendanceService
     @Autowired lateinit var withdrawFromActivityService: WithdrawFromActivityService
     @Autowired lateinit var communitySummaryService: CommunitySummaryService
     @Autowired lateinit var jdbcTemplate: JdbcTemplate
-
-    private val from = LocalDate.now().plusDays(20)
-    private val to = LocalDate.now().plusDays(24)
 
     @Test
     fun `capacity and authorized community are enforced end to end (RF-060, RF-061)`() {
@@ -120,36 +111,26 @@ class CommunityCapacityIT : AbstractPostgresIntegrationTest() {
                 hostId = hostId,
                 name = unitName,
                 maxGuests = 2,
-                bedrooms = 1,
-                beds = 1,
-                bathrooms = 1,
+                monthlyPrice = BigDecimal("900000"),
+                roomType = com.coliving.api.accommodation.domain.enums.RoomType.COMPARTIDA,
             ),
         )
-        val publication = publicationService.createPublication(
-            CreatePublicationCommand(unitId = unit.id, hostId = hostId, title = unitName),
-        )
-        publicationService.configurePricing(
-            ConfigurePricingCommand(
-                publicationId = publication.id,
-                hostId = hostId,
-                basePricePerNight = BigDecimal("90000"),
-                currency = com.coliving.api.accommodation.domain.enums.Currency.COP,
-            ),
-        )
-        publicationService.publish(publication.id, hostId)
+        val publicationId = jdbcTemplate.queryForObject(
+            "SELECT id FROM accommodation_publication WHERE unit_id = ?",
+            UUID::class.java,
+            unit.id,
+        )!!
+        publicationService.publish(publicationId, hostId)
 
         val reservation = createReservationService.create(
             CreateReservationCommand(
                 guestId = guestId,
                 unitId = unit.id,
-                fromDate = from,
-                toDate = to,
-                occupants = 1,
+                places = 1,
                 message = null,
             ),
         )
         acceptReservationService.accept(HostDecisionCommand(reservation.id, hostId, null))
-        confirmReservationService.confirm(ConfirmReservationCommand(reservation.id, guestId))
         return unit.id
     }
 
