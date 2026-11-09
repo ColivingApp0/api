@@ -1,0 +1,10 @@
+.gradle
+.kotlin
+build
+storage
+secrets
+docs
+docker-compose.yml
+.env
+.env.example
+*.md
