@@ -13,6 +13,7 @@ enum class ListingSort {
 data class SearchListingsCommand(
     val q: String? = null,
     val cityId: UUID? = null,
+    val cityName: String? = null,
     val minPrice: BigDecimal? = null,
     val maxPrice: BigDecimal? = null,
     val currency: String? = null,
