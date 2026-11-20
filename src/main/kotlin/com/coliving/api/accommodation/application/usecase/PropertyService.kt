@@ -98,7 +98,11 @@ class PropertyService(
         )
     }
 
-    /** Guest view: published, non-archived property with its published rooms. */
+    /**
+     * Guest view: published, non-archived property with its published rooms.
+     * The exact address is excluded from this projection (privacy): guests only
+     * see city and neighborhood.
+     */
     @Transactional(readOnly = true)
     fun publicDetail(propertyId: UUID): PropertyDetailView? {
         val property = propertyRepository.findById(propertyId) ?: return null
@@ -109,7 +113,7 @@ class PropertyService(
         if (publishedUnits.isEmpty()) return null
         val occupancy = occupancyPort.occupiedPlacesOf(publishedUnits.map { it.id })
         return PropertyDetailView(
-            property = assembler.propertyView(property),
+            property = assembler.publicPropertyView(property),
             host = assembler.hostView(property.hostId),
             rooms = assembler.unitViews(publishedUnits, occupancy),
         )

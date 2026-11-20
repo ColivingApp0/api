@@ -155,12 +155,16 @@ class PublicationService(
         return assembler.roommates(unit.id)
     }
 
+    /**
+     * Public detail of a published room. The property is projected without its
+     * exact address: that field is not part of the guest-facing contract.
+     */
     private fun toDetail(publication: Publication): PublicationDetailView {
         val unit = unitRepository.findById(publication.unitId)
             ?: throw NotFoundException("Habitación no encontrada")
         val property = propertyRepository.findById(unit.propertyId)
             ?: throw NotFoundException("Propiedad no encontrada")
-        val propertyView = assembler.propertyView(property)
+        val propertyView = assembler.publicPropertyView(property)
         return PublicationDetailView(
             publication = assembler.publicationView(publication),
             property = propertyView.copy(photos = emptyList()),
