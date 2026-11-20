@@ -49,6 +49,15 @@ class AccommodationViewAssembler(
             },
         )
 
+    /**
+     * Public projection of a property. The exact street address is intentionally
+     * omitted: it is not part of the guest-facing contract, only the city and
+     * neighborhood are shared. Host endpoints keep using [propertyView] because
+     * they need the address to edit it.
+     */
+    fun publicPropertyView(property: Property): PropertyView =
+        propertyView(property).copy(address = null)
+
     fun publicationView(publication: Publication): PublicationView =
         PublicationView(
             id = publication.id,
