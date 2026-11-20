@@ -269,7 +269,55 @@ cd api
   --tests "com.coliving.api.shared.mail.*"
 ```
 
-## 5. Notas de seguridad
+## 5. Checklist de producción
+
+Antes de exponer la API, revisa esta lista. Un `MAIL_PROVIDER=log` o un
+`APP_PUBLIC_BASE_URL` con `localhost` no rompen el arranque ni devuelven error,
+pero los correos **no llegan** y los enlaces no funcionan; por eso el backend
+registra un `WARN` al arrancar (ver más abajo).
+
+- [ ] **`MAIL_PROVIDER`**: debe ser `mailtrap`, `smtp` o `firebase`; nunca `log`.
+- [ ] **`MAIL_FROM`**: remitente de un dominio verificado en el proveedor (por
+      ejemplo `no-reply@rangelm.site`). No uses `hello@demomailtrap.co` en
+      producción: es el dominio demo y está limitado.
+- [ ] **Credenciales del proveedor**:
+      - Mailtrap: `MAILTRAP_TOKEN` válido y `MAILTRAP_SANDBOX=false`.
+      - SMTP: `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME` y `MAIL_PASSWORD`
+        (contraseña de aplicación, no la del correo).
+      - Firebase: `FIREBASE_ENABLED=true`, `FIREBASE_PROJECT_ID` y
+        `FIREBASE_CREDENTIALS` (o ADC).
+- [ ] **`APP_PUBLIC_BASE_URL`**: origen público real del frontend
+      (`https://app.tu-dominio.com`), sin `localhost`. Se usa para construir los
+      enlaces de verificación y de restablecimiento de contraseña.
+- [ ] **Secretos fuera de git**: configura todo por variables de entorno o por
+      el gestor de secretos del despliegue. No commitees `.env`, tokens ni el
+      JSON de la cuenta de servicio.
+
+Al arrancar, busca en el log estos avisos y corrígelos:
+
+```text
+WARN ... MAIL CONFIGURATION: app.mail.provider=log outside the dev profile...
+WARN ... MAIL CONFIGURATION: app.mail.publicBaseUrl='http://localhost:8080' points at localhost...
+```
+
+Cómo comprobar una entrega real:
+
+1. En el log del backend debe aparecer una línea de envío, por ejemplo:
+
+   ```text
+   [mail:mailtrap] sent category=account ids=[...]
+   ```
+
+   (En desarrollo con `provider=log` verás `[mail:log] ...`; eso confirma que el
+   flujo se ejecutó, pero **no** que haya entrega externa.)
+2. En Mailtrap, revisa **Sending → Email Logs** para el `message_id`.
+3. Prueba el flujo completo: registro → correo de verificación → solicitud de
+   restablecimiento (`POST /api/v1/auth/password-reset/request`) → enlace del
+   correo → nueva contraseña → inicio de sesión.
+4. Recuerda que las cuentas `PENDING_EMAIL_VERIFICATION` también reciben el
+   correo de recuperación y quedan `ACTIVE` al completar el restablecimiento.
+
+## 6. Notas de seguridad
 
 - El token de verificación/reset sigue siendo de un solo uso y solo se guarda su
   hash; el correo transporta el valor en claro, como es habitual.
