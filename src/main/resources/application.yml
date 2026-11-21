@@ -41,7 +41,7 @@ app:
     provider: ${MAIL_PROVIDER:log}
     from: ${MAIL_FROM:no-reply@coliving.local}
     from-name: ${MAIL_FROM_NAME:ColivinApp}
-    public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:4200}
+    public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
     verification-path: /verificar-correo
     reset-path: /restablecer-password
     firebase-collection: ${MAIL_FIREBASE_COLLECTION:mail}

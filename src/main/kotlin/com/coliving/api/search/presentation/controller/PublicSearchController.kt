@@ -30,6 +30,7 @@ class PublicSearchController(
     fun search(
         @RequestParam("q") q: String?,
         @RequestParam("cityId") cityId: UUID?,
+        @RequestParam("cityName") cityName: String?,
         @RequestParam("minPrice") minPrice: BigDecimal?,
         @RequestParam("maxPrice") maxPrice: BigDecimal?,
         @RequestParam("currency") currency: String?,
@@ -47,6 +48,7 @@ class PublicSearchController(
         SearchListingsCommand(
             q = q,
             cityId = cityId,
+            cityName = cityName,
             minPrice = minPrice,
             maxPrice = maxPrice,
             currency = currency,

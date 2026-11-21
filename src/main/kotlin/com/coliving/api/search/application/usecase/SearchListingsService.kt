@@ -7,6 +7,8 @@ import com.coliving.api.search.application.port.out.ListingFacet
 import com.coliving.api.search.application.port.out.PublicationCatalogPort
 import com.coliving.api.shared.error.InvalidArgumentException
 import java.math.BigDecimal
+import java.text.Normalizer
+import java.util.Locale
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -38,6 +40,9 @@ class SearchListingsService(
             }
         }
         command.cityId?.let { cityId -> listings = listings.filter { it.cityId == cityId } }
+        normalizeCityName(command.cityName)?.let { city ->
+            listings = listings.filter { facet -> normalizeCityName(facet.cityName) == city }
+        }
         command.propertyId?.let { propertyId -> listings = listings.filter { it.propertyId == propertyId } }
 
         if (command.minPrice != null || command.maxPrice != null || command.currency != null) {
@@ -129,5 +134,26 @@ class SearchListingsService(
         command.minCapacity?.let {
             if (it < 1) throw InvalidArgumentException("La capacidad mínima debe ser al menos 1")
         }
+        command.cityName?.trim()?.let {
+            if (it.length > MAX_CITY_NAME_LENGTH) {
+                throw InvalidArgumentException("cityName no puede superar los $MAX_CITY_NAME_LENGTH caracteres")
+            }
+        }
+    }
+
+    /**
+     * Case- and accent-insensitive comparison key, so "Bogotá", "BOGOTA" and
+     * " bogotá " all match. Blank values are ignored (no filter applied).
+     */
+    private fun normalizeCityName(value: String?): String? =
+        value?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { Normalizer.normalize(it, Normalizer.Form.NFD) }
+            ?.replace(DIACRITICS, "")
+            ?.lowercase(Locale.ROOT)
+
+    private companion object {
+        const val MAX_CITY_NAME_LENGTH = 120
+        val DIACRITICS = Regex("\\p{M}+")
     }
 }

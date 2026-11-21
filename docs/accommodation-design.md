@@ -42,6 +42,16 @@ Público autenticado: `GET /publications`, `GET /publications/{id}`,
 `GET /publications/{id}/roommates` (solo residentes con consentimiento) y
 `GET /properties/{id}`.
 
+### Privacidad de la dirección
+
+La dirección exacta (`Property.address`) **no forma parte de la proyección
+pública**: las vistas de invitado (`/api/v1/publications/{id}` y
+`/api/v1/properties/{id}`) la devuelven como `null`. Solo se exponen ciudad y
+barrio (`cityId`, `cityName`, `neighborhood`). Los endpoints de anfitrión
+(`/api/v1/host/**`) conservan la dirección porque la necesitan para editar la
+propiedad. Cuando exista un canal post-aceptación (p. ej. una solicitud
+aceptada), la dirección se compartirá fuera de la API pública.
+
 ## Fuera de alcance
 
 - Subida de archivos de imagen (se gestionan URLs).

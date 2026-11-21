@@ -34,6 +34,36 @@ class SearchListingsServiceTest {
     }
 
     @Test
+    fun `filters by city ignoring case and accents`() {
+        catalog.add(roomTitle = "Habitación norte", cityName = "Bogotá")
+        catalog.add(roomTitle = "Habitación playa", cityName = "Cartagena")
+
+        val result = service.search(SearchListingsCommand(cityName = "  BOGOTA  "))
+        assertEquals(listOf("Habitación norte"), result.map { it.roomTitle })
+    }
+
+    @Test
+    fun `city filter combines with the text query`() {
+        catalog.add(roomTitle = "Habitación norte", cityName = "Bogotá")
+        catalog.add(roomTitle = "Habitación centro", cityName = "Bogotá")
+        catalog.add(roomTitle = "Habitación centro", cityName = "Cartagena")
+
+        val result = service.search(SearchListingsCommand(q = "centro", cityName = "bogota"))
+
+        assertEquals(listOf("Habitación centro"), result.map { it.roomTitle })
+        assertEquals("Bogotá", result.single().cityName)
+    }
+
+    @Test
+    fun `blank city name is ignored`() {
+        catalog.add(roomTitle = "Norte", cityName = "Bogotá")
+        catalog.add(roomTitle = "Playa", cityName = "Cartagena")
+
+        assertEquals(2, service.search(SearchListingsCommand(cityName = "   ")).size)
+        assertEquals(2, service.search(SearchListingsCommand(cityName = "")).size)
+    }
+
+    @Test
     fun `filters by monthly price and currency`() {
         catalog.add(roomTitle = "Económica", price = BigDecimal("650000"), currency = "COP")
         catalog.add(roomTitle = "Cara", price = BigDecimal("1800000"), currency = "COP")
@@ -110,6 +140,9 @@ class SearchListingsServiceTest {
         }
         assertFailsWith<InvalidArgumentException> {
             service.search(SearchListingsCommand(minCapacity = 0))
+        }
+        assertFailsWith<InvalidArgumentException> {
+            service.search(SearchListingsCommand(cityName = "x".repeat(121)))
         }
     }
 }

@@ -19,7 +19,7 @@ data class MailProperties(
     val from: String = "no-reply@coliving.local",
     val fromName: String = "ColivinApp",
     /** Public frontend origin used to build the links inside the e-mails. */
-    val publicBaseUrl: String = "http://localhost:4200",
+    val publicBaseUrl: String = "http://localhost:8080",
     val verificationPath: String = "/verificar-correo",
     val resetPath: String = "/restablecer-password",
     /** Firestore collection read by the Firebase Trigger Email extension. */

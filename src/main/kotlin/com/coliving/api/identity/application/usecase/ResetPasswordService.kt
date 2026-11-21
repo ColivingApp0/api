@@ -4,6 +4,7 @@ import com.coliving.api.identity.application.dto.ResetPasswordCommand
 import com.coliving.api.identity.application.port.out.PasswordHasher
 import com.coliving.api.identity.application.port.out.TokenGenerator
 import com.coliving.api.identity.domain.enums.SecurityTokenPurpose
+import com.coliving.api.identity.domain.enums.UserStatus
 import com.coliving.api.identity.domain.repository.SecurityTokenStore
 import com.coliving.api.identity.domain.repository.UserRepository
 import com.coliving.api.identity.domain.vo.PasswordHash
@@ -14,6 +15,13 @@ import org.springframework.stereotype.Service
 
 /**
  * RF-003: consuming a valid, single-use reset token establishes a new password.
+ *
+ * A successful reset also proves ownership of the mailbox (the token is only
+ * delivered there), so an account still in [UserStatus.PENDING_EMAIL_VERIFICATION]
+ * is verified and promoted to ACTIVE. Without this, a user that never clicked
+ * the original verification link could reset the password but still be unable
+ * to log in. This does not affect SUSPENDED accounts: `verifyEmail()` only
+ * promotes the pending state and never reactivates a suspended account.
  */
 @Service
 class ResetPasswordService(
@@ -40,6 +48,7 @@ class ResetPasswordService(
         val user = userRepository.findById(token.userId)
             ?: throw NotFoundException("User not found")
         user.updatePassword(PasswordHash.of(passwordHasher.hash(command.newPassword)))
+        user.verifyEmail()
         userRepository.save(user)
     }
 
